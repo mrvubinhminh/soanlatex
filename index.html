@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trình Soạn Thảo LaTeX Chuyên Nghiệp - Thầy Việt</title>
+    <title>Trình Soạn Thảo LaTeX Chuyên Nghiệp - Thầy Vũ Tiến Lực</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -174,9 +174,12 @@
                 <option value="test_rubric">Đề có đáp án & thang điểm (Hàng kẻ)</option>
             </select>
 
-            <!-- NÚT CHUẨN HÓA TEXT (AUTO FORMAT) -->
-            <button onclick="autoFormatText()" class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-purple-400 text-white" title="Tự động biến văn bản thường thành mã LaTeX chuẩn">
-                <i class="ph ph-magic-wand text-lg"></i> Chuẩn hóa
+            <!-- TIỆN ÍCH NGẮT TRANG VÀ ĐÁNH SỐ TRANG -->
+            <button onclick="insertAtCursor('\\newpage\n')" class="bg-purple-500 hover:bg-purple-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-purple-400 text-white" title="Chèn dấu ngắt trang (sang trang mới)">
+                <i class="ph ph-file-dashed text-lg"></i> Ngắt trang
+            </button>
+            <button onclick="insertAtCursor('\\vspace{0.2cm}\n\\hfill Trang .../...\n')" class="bg-teal-500 hover:bg-teal-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-teal-400 text-white" title="Chèn đánh số trang ở góc phải">
+                <i class="ph ph-hash text-lg"></i> Đánh số trang
             </button>
 
             <button onclick="downloadTex()" class="bg-amber-500 hover:bg-amber-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Lưu mã nguồn LaTeX (.tex)">
@@ -242,9 +245,14 @@
                     <span class="font-semibold text-slate-700 flex items-center gap-2">
                         <i class="ph ph-code"></i> Mã nguồn LaTeX
                     </span>
-                    <span class="text-xs text-slate-500">Mẹo: Dán văn bản rồi bấm "Chuẩn hóa"</span>
+                    <span class="text-xs text-slate-500">Mẹo: Nhấn Ctrl+F (Phân số), Ctrl+Q (Căn)</span>
                 </div>
-                <textarea id="editor" class="flex-1 w-full p-4 resize-none outline-none text-slate-800 text-base" placeholder="Dán đoạn văn bản thô (có chứa **Câu 1**, A. B. C. D.) vào đây, sau đó nhấn nút 'Chuẩn hóa' ở trên để tự động biến thành mã LaTeX..."></textarea>
+                <textarea id="editor" class="flex-1 w-full p-4 resize-none outline-none text-slate-800 text-base" placeholder="Nhập mã LaTeX của bạn vào đây hoặc sử dụng thanh công cụ bên trên...
+
+Ví dụ: 
+Nghiệm của phương trình bậc hai $ax^2 + bx + c = 0$ là:
+$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$">Nghiệm của phương trình bậc hai $ax^2 + bx + c = 0$ là:
+$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
             </div>
 
             <!-- Khung Render (Preview) -->
@@ -293,33 +301,6 @@
             document.getElementById('editor').style.fontFamily = fontFamily;
         }
 
-        // --- TÍNH NĂNG CHUẨN HÓA VĂN BẢN (AUTO FORMAT) ---
-        function autoFormatText() {
-            let text = editor.value;
-
-            // 1. Tiêu đề BÀI (Center, Large, Bold)
-            text = text.replace(/^\*\*BÀI:\s*(.*?)\*\*$/gm, '\\begin{center}\n\\Large{\\textbf{BÀI: $1}}\n\\end{center}\n\\hrulefill\n');
-
-            // 2. Tiêu đề Phần (PHẦN 1, PHẦN 2...)
-            text = text.replace(/^\*\*PHẦN\s*(.*?)\*\*$/gm, '\\partheading{PHẦN $1}');
-
-            // 3. Câu X: Chọn Y (Phần lời giải) -> Chữ Đỏ, xuống dòng
-            text = text.replace(/\*\*Câu\s+(\d+):\s+Chọn\s+([A-D])\*\*/g, '\\textbf{\\textcolor{red}{Câu $1: Chọn $2}}\\\\');
-
-            // 4. Câu X: (Phần câu hỏi) -> Chữ Xanh
-            text = text.replace(/\*\*Câu\s+(\d+):\*\*/g, '\\textbf{\\textcolor{blue}{Câu $1:$}}');
-
-            // 5. Dấu --- phân cách -> Đổi thành ngắt dòng và kẻ ngang
-            text = text.replace(/^---$/gm, '\\vspace{0.2cm}\n\\hrulefill\n\\vspace{0.2cm}');
-
-            // (Phần tự động bắt A,B,C,D và a)b)c)d) gỡ bỏ khỏi chuẩn hóa cứng để dành đất cho hệ thống phân tích động thông minh lúc render)
-            
-            editor.value = text;
-            triggerUpdate();
-            showToast("Đã chuẩn hóa văn bản thành công!");
-        }
-
-
         // --- 1. CONFIGURATION FOR MATHTYPE-LIKE TOOLBAR ---
         // Mỗi mục là một nhóm công cụ (tab)
         const toolbarConfig = [
@@ -365,7 +346,7 @@
                     { label: 'Mã Đề', tex: '\\examcode{*}\n', tooltip: 'Khung mã đề thi' },
                     { label: 'Đáp án A,B,C,D', tex: '\\begin{choices}\n  \\item *\n  \\item \n  \\item \n  \\item \n\\end{choices}\n', tooltip: 'Khối trắc nghiệm ngang chuẩn 2025' },
                     { label: 'Ô trả lời ngắn', tex: '\\shortanswer\n', tooltip: 'Hộp 4 ô vuông điền kết quả trả lời ngắn' },
-                    { label: 'Khung ảnh rỗng', tex: '\\imageplaceholder{*}\n', tooltip: 'Chèn khung trống mô phỏng Hình vẽ/Đồ thị' },
+                    { label: 'Khung ảnh rỗng', tex: '\\imageplaceholder{*}\n', tooltip: 'Chèn khung trống mô Hình vẽ/Đồ thị' },
                     { label: 'Trắc nghiệm (Bo tròn)', tex: '\\begin{mcq}\n  \\item *\n  \\item \n  \\item \n  \\item \n\\end{mcq}\n', tooltip: 'Khối trắc nghiệm (Bo tròn, thẳng hàng)' },
                     { label: 'Kẻ n dòng', tex: '\\answerlines{*}\n', tooltip: 'Chèn số dòng kẻ đứt nét cụ thể (VD: 5)' },
                     { label: 'Kẻ 2 cột', tex: '\\answertwocols{*}\n', tooltip: 'Chèn dòng kẻ đứt nét chia làm 2 cột (VD: 5 dòng)' },
