@@ -159,7 +159,7 @@
             <h1 class="text-2xl font-bold flex items-center gap-2">
                 <i class="ph ph-math-operations"></i> Soạn Thảo LaTeX Thông Minh
             </h1>
-            <p class="text-blue-200 text-sm mt-1">Được thiết kế bởi chuyên gia LaTeX với 20 năm kinh nghiệm giảng dạy</p>
+            <p class="text-blue-200 text-sm mt-1">Tác giả: Thầy Vũ Tiến Lực - Trường THPT Nguyễn Hữu Cảnh - TP HCM</p>
         </div>
         <div class="flex gap-4 items-center">
             <!-- Thêm Dropdown chọn mẫu đề thi -->
@@ -172,17 +172,22 @@
                 <option value="test_rubric">Đề có đáp án & thang điểm (Hàng kẻ)</option>
             </select>
 
-            <button onclick="downloadTex()" class="bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium">
-                <i class="ph ph-download-simple"></i> Tải file .tex
+            <button onclick="downloadTex()" class="bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Lưu mã nguồn LaTeX (.tex)">
+                <i class="ph ph-download-simple"></i>
             </button>
             <button onclick="printPDF()" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium">
-                <i class="ph ph-printer"></i> In PDF (A4)
+                <i class="ph ph-printer"></i> In PDF
             </button>
-            <button onclick="clearEditor()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium">
-                <i class="ph ph-trash"></i> Xóa bảng
+            <!-- NÚT MỚI: XUẤT WORD -->
+            <button onclick="exportToWord()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-blue-400">
+                <i class="ph ph-file-doc text-lg"></i> Xuất Word
             </button>
-            <button onclick="copyLaTeX()" class="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium">
-                <i class="ph ph-copy"></i> Copy Mã LaTeX
+
+            <button onclick="clearEditor()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Xóa bảng">
+                <i class="ph ph-trash"></i>
+            </button>
+            <button onclick="copyLaTeX()" class="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Copy mã">
+                <i class="ph ph-copy"></i>
             </button>
         </div>
     </header>
@@ -691,7 +696,216 @@ $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
             window.print();
         }
 
-        // --- 6. CÁC TÍNH NĂNG THÔNG MINH NÂNG CAO (HOTKEYS, AUTO-SAVE, AUTO-CLOSE) ---
+        // --- 6. TÍNH NĂNG XUẤT WORD (DOCX BẰNG MATHML) ---
+        async function exportToWord() {
+            showToast("Đang xử lý xuất Word...");
+            let rawText = editor.value;
+
+            // Chuyển đổi các định dạng đặc biệt sang HTML mà Word có thể đọc (dùng bảng table)
+            // 1. Tiêu đề 2 cột
+            rawText = rawText.replace(/\\begin\{twocolumns\}([\s\S]*?)\\end\{twocolumns\}/g, function(match, content) {
+                let cols = content.split(/\\column/).filter(i => i.trim() !== '');
+                let left = cols[0] ? cols[0].trim().replace(/\\\\(?:\s*\n)?/g, '<br>') : '';
+                let right = cols[1] ? cols[1].trim().replace(/\\\\(?:\s*\n)?/g, '<br>') : '';
+                return `<table width="100%" cellpadding="0" cellspacing="0"><tr><td width="50%" valign="top" align="center">${left}</td><td width="50%" valign="top" align="center">${right}</td></tr></table>`;
+            });
+
+            // 2. Tiêu đề phần
+            rawText = rawText.replace(/\\partheading\{([^{}]+)\}/g, `<br><b><span style="font-size:14pt; text-transform:uppercase;">$1</span></b><br>`);
+
+            // 3. Khung mã đề thi
+            rawText = rawText.replace(/\\examcode\{([^{}]+)\}/g, `<div style="text-align:right; font-weight:bold;">[ $1 ]</div>`);
+
+            // 4. Khối trắc nghiệm ngang 4 cột
+            rawText = rawText.replace(/\\begin\{choices\}([\s\S]*?)\\end\{choices\}/g, function(match, content) {
+                let items = content.split(/\\item/).filter(i => i.trim() !== '');
+                let labels = ['A.', 'B.', 'C.', 'D.'];
+                let html = `<table width="100%" cellpadding="0" cellspacing="0"><tr>`;
+                for(let i = 0; i < items.length; i++) {
+                    let label = labels[i] || '';
+                    let itemContent = items[i].trim();
+                    html += `<td width="25%" valign="top"><b>${label}</b> ${itemContent}</td>`;
+                }
+                html += `</tr></table>`;
+                return html;
+            });
+
+            // 5. Khối trắc nghiệm 2 cột
+            rawText = rawText.replace(/\\begin\{mcq\}([\s\S]*?)\\end\{mcq\}/g, function(match, content) {
+                let items = content.split(/\\item/).filter(i => i.trim() !== '');
+                let labels = ['A.', 'B.', 'C.', 'D.', 'E.', 'F.'];
+                let html = `<table width="100%" cellpadding="0" cellspacing="0">`;
+                for(let i = 0; i < items.length; i+=2) {
+                    html += `<tr>`;
+                    html += `<td width="50%" valign="top"><b>${labels[i]||''}</b> ${items[i].trim()}</td>`;
+                    if(items[i+1]) {
+                        html += `<td width="50%" valign="top"><b>${labels[i+1]||''}</b> ${items[i+1].trim()}</td>`;
+                    }
+                    html += `</tr>`;
+                }
+                html += `</table>`;
+                return html;
+            });
+
+            // 6. Các ký hiệu ngắn
+            rawText = rawText.replace(/\\shortanswer/g, `<div style="text-align:right; margin-top:5px; margin-bottom:10px;"><b>KQ:</b> [____] [____] [____] [____]</div>`);
+            rawText = rawText.replace(/\\imageplaceholder\{([^{}]+)\}/g, `<div style="text-align:center; border:1px solid #000; padding:40px; margin:10px 0;">[Hình ảnh: $1]</div>`);
+            
+            // 7. Bảng chấm điểm / Rubric
+            rawText = rawText.replace(/\\begin\{rubric\}([\s\S]*?)\\end\{rubric\}/g, function(match, content) {
+                let items = content.split(/\\item/).filter(i => i.trim() !== '');
+                let html = '<table border="1" cellspacing="0" cellpadding="5" width="100%" style="border-collapse:collapse; margin-top:10px; margin-bottom:10px;">';
+                html += '<tr><td style="font-weight:bold; text-align:center; background-color:#f0f0f0;">Nội dung chấm / Đáp án</td><td style="font-weight:bold; text-align:center; background-color:#f0f0f0;" width="100">Điểm</td></tr>';
+                for(let i = 0; i < items.length; i++) {
+                    let parts = items[i].split('|');
+                    html += `<tr><td>${parts[0]?parts[0].trim():''}</td><td align="center" style="color:red; font-weight:bold;">${parts[1]?parts[1].trim():''}</td></tr>`;
+                }
+                html += '</table>';
+                return html;
+            });
+
+            rawText = rawText.replace(/\\gradingbox/g, `<table border="1" cellspacing="0" cellpadding="5" width="100%" style="border-collapse:collapse; margin-top:10px; margin-bottom:10px;"><tr><th width="25%">Điểm</th><th>Lời phê của giáo viên</th></tr><tr><td height="80"></td><td></td></tr></table>`);
+
+            // --- BƯỚC 2: TÁCH VÀ XỬ LÝ MATH/VĂN BẢN ---
+            const blockRegex = /(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}|\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g;
+            let parts = rawText.split(blockRegex);
+            let wordHtmlParts = [];
+
+            for (let i = 0; i < parts.length; i++) {
+                if (i % 2 === 0) {
+                    let s = parts[i];
+                    
+                    // SỬA LỖI DÍNH CHỮ KHI XUẤT WORD: Word thường bỏ qua khoảng trắng quanh thẻ <math>.
+                    // Thay thế khoảng trắng ở 2 đầu chuỗi văn bản (tiếp giáp với công thức) thành &nbsp;
+                    if (i > 0) {
+                        s = s.replace(/^[ \t]+/, (m) => '&nbsp;'.repeat(m.length));
+                    }
+                    if (i < parts.length - 1) {
+                        s = s.replace(/[ \t]+$/, (m) => '&nbsp;'.repeat(m.length));
+                    }
+
+                    // Thay thế định dạng chữ
+                    const replaceCmd = (text, cmd, openTag, closeTag) => {
+                        const regex = new RegExp(`\\\\${cmd}\\{((?:[^{}]|\\{[^{}]*\\})*)\\}`, 'g');
+                        let newText = text.replace(regex, `${openTag}$1${closeTag}`);
+                        while(newText !== text) {
+                            text = newText;
+                            newText = text.replace(regex, `${openTag}$1${closeTag}`);
+                        }
+                        return text;
+                    };
+                    s = replaceCmd(s, 'textbf', '<b>', '</b>');
+                    s = replaceCmd(s, 'textit', '<i>', '</i>');
+                    s = replaceCmd(s, 'underline', '<u>', '</u>');
+                    
+                    const colorRegex = /\\textcolor\{([^{}]+)\}\{((?:[^{}]|\\{[^{}]*\\})*)\}/g;
+                    let newS = s.replace(colorRegex, '<span style="color: $1;">$2</span>');
+                    while(newS !== s) { s = newS; newS = s.replace(colorRegex, '<span style="color: $1;">$2</span>'); }
+
+                    // Thay thế dòng kẻ
+                    s = s.replace(/\\dotfill/g, '........................................................');
+                    s = s.replace(/\\answerlines\{(\d+)\}/g, (match, n) => {
+                        let res = '';
+                        for(let k=0; k<n; k++) res += '<br>_________________________________________________________________________________';
+                        return res;
+                    });
+                    s = s.replace(/\\answertwocols\{(\d+)\}/g, (match, n) => {
+                        let lines = '';
+                        for(let k=0; k<n; k++) lines += '<br>______________________________________';
+                        return `<table width="100%"><tr><td width="50%">${lines}</td><td width="50%">${lines}</td></tr></table>`;
+                    });
+                    s = s.replace(/\\fillpage/g, '<br><br><i>[Phần làm bài - Dòng kẻ bị ẩn trong chế độ xuất Word, vui lòng tự gõ thêm]</i>');
+                    
+                    s = s.replace(/\\newpage/g, '<br clear="all" style="page-break-before:always" />');
+                    s = s.replace(/\\hrulefill/g, '<hr>');
+                    s = s.replace(/\\vspace\{[^}]+\}/g, '<br><br>');
+
+                    // Xử lý hfill và xuống dòng trong văn bản
+                    let paragraphs = s.split(/\n\s*\n/); 
+                    for(let p = 0; p < paragraphs.length; p++) {
+                        let lines = paragraphs[p].split(/\\\\(?:\s*\n)?/);
+                        for(let j = 0; j < lines.length; j++) {
+                            if(lines[j].includes('\\hfill')) {
+                                let pieces = lines[j].split('\\hfill');
+                                let row = `<table width="100%" cellpadding="0" cellspacing="0"><tr>`;
+                                for(let k=0; k<pieces.length; k++) {
+                                    let align = (k===0) ? "left" : (k===pieces.length-1 ? "right" : "center");
+                                    row += `<td align="${align}">${pieces[k].trim()}</td>`;
+                                }
+                                row += `</tr></table>`;
+                                lines[j] = row;
+                            } else if (j < lines.length - 1) {
+                                lines[j] = lines[j] + '<br>';
+                            }
+                        }
+                        paragraphs[p] = lines.join('');
+                    }
+                    wordHtmlParts.push(paragraphs.join('<br>'));
+                    
+                } else {
+                    // XỬ LÝ TOÁN VÀ TIKZ
+                    let mathText = parts[i];
+                    if (mathText.startsWith('\\begin{tikzpicture}')) {
+                        wordHtmlParts.push(`<div style="border: 1px dashed #ccc; padding: 20px; text-align: center; color: red;">[Hình vẽ TikZ không thể xuất trực tiếp sang Word. Vui lòng dùng công cụ Snipping Tool để cắt ảnh từ khung Xem Trước và dán vào Word]</div>`);
+                    } else {
+                        // Gọi "trí tuệ" của MathJax để biến đổi mã TeX thành mã MathML gốc mà Microsoft Word đọc được
+                        let isDisplay = mathText.startsWith('$$') || mathText.startsWith('\\[');
+                        let tex = mathText.replace(/^\$\$|\$\$$|^\\\[|\\\]$|^\$|\$$|^\\\(|\\\)$/g, '');
+                        try {
+                            if (window.MathJax && window.MathJax.tex2mmlPromise) {
+                                let mml = await MathJax.tex2mmlPromise(tex, {display: isDisplay});
+                                // Chèn namespace bắt buộc để Word tự động nhận diện và biến đổi thành khung Equation
+                                mml = mml.replace('<math ', '<math xmlns="http://www.w3.org/1998/Math/MathML" ');
+                                if(isDisplay) {
+                                    wordHtmlParts.push(`<div align="center">${mml}</div>`);
+                                } else {
+                                    wordHtmlParts.push(mml);
+                                }
+                            } else {
+                                wordHtmlParts.push(mathText);
+                            }
+                        } catch (e) {
+                            console.error('Lỗi chuyển đổi Word Math:', e);
+                            wordHtmlParts.push(mathText); // Lỗi thì giữ nguyên mã LaTeX
+                        }
+                    }
+                }
+            }
+
+            // Gói HTML hoàn chỉnh với Header để đánh lừa Word
+            const finalHtml = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <style>
+                        body { 
+                            font-family: 'Times New Roman', Times, serif; 
+                            font-size: 13pt; 
+                            line-height: 1.5;
+                        }
+                        table, td, th { font-family: 'Times New Roman', Times, serif; font-size: 13pt; }
+                        p { margin-top: 0; margin-bottom: 8pt; }
+                    </style>
+                </head>
+                <body>
+                    ${wordHtmlParts.join('')}
+                </body>
+                </html>
+            `;
+
+            // Xuất ra file
+            const blob = new Blob(['\ufeff', finalHtml], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'de-thi-xuat-tu-latex.doc';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast("Đã tải xuống file Word thành công!");
+        }
+
+        // --- CÁC TÍNH NĂNG THÔNG MINH NÂNG CAO (HOTKEYS, AUTO-SAVE, AUTO-CLOSE) ---
 
         // Hàm chèn mẫu đề thi
         function loadTemplate(type) {
@@ -790,7 +1004,7 @@ d) Thể tích chính xác của toàn bộ khối vòm bằng $\\frac{1}{3}$ (�
 \\textbf{\\textcolor{blue}{Câu 2.}} Tại một gian hàng xổ số bốc thăm, hộp kín chứa 5 quả cầu đỏ và 3 quả cầu xanh. Một người chơi được phép rút ngẫu nhiên, không hoàn lại lần lượt 2 quả cầu. Giả sử hệ thống thông báo rằng quả cầu đầu tiên rút ra là màu đỏ. Tính xác suất để quả cầu thứ hai rút ra cũng mang màu đỏ. Viết kết quả dưới dạng phân số tối giản $\\frac{a}{b}$. Tính $a + b$.
 \\shortanswer`;
             } else if (type === 'test45') {
-                templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ KIỂM TRA 1 TIẾT (45 PHÚT)}\\\\\n\\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\\n\\hrulefill\n\n\\textbf{Câu 1 (3.0 điểm):} Giải các phương trình và hệ phương trình sau:\n\n\\begin{aligned}\n  &a)\\; \\sqrt{x^2 - 4x + 3} = x - 2 \\\\\n  &b)\\; \\begin{cases} 2x + y = 5 \\\\ x - 3y = -1 \\end{cases}\n\\end{aligned}\n\n\\textbf{Câu 2 (3.0 điểm):} Cho hàm số $y = x^2 - 4x + 3$ (P).\n\na) Lập bảng biến thiên và vẽ đồ thị (P).\n\nb) Tìm $m$ để đường thẳng $d: y = x + m$ cắt (P) tại hai điểm phân biệt.\n\n\\textbf{Câu 3 (3.0 điểm):} Trong mặt phẳng tọa độ $Oxy$, cho tam giác $ABC$ có $A(1; 2)$, $B(-1; 1)$ và $C(3; -1)$.\n\na) Viết phương trình tổng quát của đường cao $AH$.\n\nb) Tính diện tích tam giác $ABC$.\n\n\\textbf{Câu 4 (1.0 điểm):} Tìm giá trị lớn nhất, giá trị nhỏ nhất của hàm số $f(x) = \\sin^4 x + \\cos^4 x$.`;
+                templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ KIỂM TRA 1 TIẾT (45 PHÚT)}\\\\\n\\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\\n\\hrulefill\n\n\\textbf{Câu 1 (3.0 điểm):} Giải các phương trình và hệ phương trình sau:\n\n$$\\begin{aligned}\n  &a)\\; \\sqrt{x^2 - 4x + 3} = x - 2 \\\\\n  &b)\\; \\begin{cases} 2x + y = 5 \\\\ x - 3y = -1 \\end{cases}\n\\end{aligned}$$\n\n\\textbf{Câu 2 (3.0 điểm):} Cho hàm số $y = x^2 - 4x + 3$ (P).\n\na) Lập bảng biến thiên và vẽ đồ thị (P).\n\nb) Tìm $m$ để đường thẳng $d: y = x + m$ cắt (P) tại hai điểm phân biệt.\n\n\\textbf{Câu 3 (3.0 điểm):} Trong mặt phẳng tọa độ $Oxy$, cho tam giác $ABC$ có $A(1; 2)$, $B(-1; 1)$ và $C(3; -1)$.\n\na) Viết phương trình tổng quát của đường cao $AH$.\n\nb) Tính diện tích tam giác $ABC$.\n\n\\textbf{Câu 4 (1.0 điểm):} Tìm giá trị lớn nhất, giá trị nhỏ nhất của hàm số $f(x) = \\sin^4 x + \\cos^4 x$.`;
             } else if (type === 'test90') {
                 templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ THI HỌC KÌ (90 PHÚT)}\\\\
 \\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\
