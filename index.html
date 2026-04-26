@@ -165,6 +165,8 @@
             <!-- Thêm Dropdown chọn mẫu đề thi -->
             <select id="template-select" onchange="loadTemplate(this.value)" class="bg-blue-700 hover:bg-blue-600 text-white border border-blue-500 rounded px-3 py-2 text-sm font-medium transition cursor-pointer outline-none focus:ring-2 focus:ring-blue-300">
                 <option value="">📋 Chèn mẫu đề thi...</option>
+                <option value="test_line">Chuyên đề: PT Đường thẳng (Trắc nghiệm + Lời giải)</option>
+                <option value="test_circle">Chuyên đề: Phương trình đường tròn</option>
                 <option value="test_2025">Đề thi 2025 (Cấu trúc mới: 3 Phần)</option>
                 <option value="test45">Đề kiểm tra 45 phút (1 tiết)</option>
                 <option value="test90">Đề thi học kì (90 phút)</option>
@@ -172,21 +174,25 @@
                 <option value="test_rubric">Đề có đáp án & thang điểm (Hàng kẻ)</option>
             </select>
 
-            <button onclick="downloadTex()" class="bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Lưu mã nguồn LaTeX (.tex)">
+            <!-- NÚT CHUẨN HÓA TEXT (AUTO FORMAT) -->
+            <button onclick="autoFormatText()" class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-purple-400 text-white" title="Tự động biến văn bản thường thành mã LaTeX chuẩn">
+                <i class="ph ph-magic-wand text-lg"></i> Chuẩn hóa
+            </button>
+
+            <button onclick="downloadTex()" class="bg-amber-500 hover:bg-amber-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Lưu mã nguồn LaTeX (.tex)">
                 <i class="ph ph-download-simple"></i>
             </button>
-            <button onclick="printPDF()" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium">
-                <i class="ph ph-printer"></i> In PDF
+            <button onclick="printPDF()" class="bg-indigo-500 hover:bg-indigo-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="In ra PDF">
+                <i class="ph ph-printer"></i>
             </button>
-            <!-- NÚT MỚI: XUẤT WORD -->
-            <button onclick="exportToWord()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-blue-400">
+            <button onclick="exportToWord()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-blue-400" title="Xuất ra file Word">
                 <i class="ph ph-file-doc text-lg"></i> Xuất Word
             </button>
 
-            <button onclick="clearEditor()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Xóa bảng">
+            <button onclick="clearEditor()" class="bg-red-500 hover:bg-red-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Xóa bảng">
                 <i class="ph ph-trash"></i>
             </button>
-            <button onclick="copyLaTeX()" class="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Copy mã">
+            <button onclick="copyLaTeX()" class="bg-emerald-500 hover:bg-emerald-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Copy mã">
                 <i class="ph ph-copy"></i>
             </button>
         </div>
@@ -236,14 +242,9 @@
                     <span class="font-semibold text-slate-700 flex items-center gap-2">
                         <i class="ph ph-code"></i> Mã nguồn LaTeX
                     </span>
-                    <span class="text-xs text-slate-500">Mẹo: Nhấn Ctrl+F (Phân số), Ctrl+Q (Căn)</span>
+                    <span class="text-xs text-slate-500">Mẹo: Dán văn bản rồi bấm "Chuẩn hóa"</span>
                 </div>
-                <textarea id="editor" class="flex-1 w-full p-4 resize-none outline-none text-slate-800 text-base" placeholder="Nhập mã LaTeX của bạn vào đây hoặc sử dụng thanh công cụ bên trên...
-
-Ví dụ: 
-Nghiệm của phương trình bậc hai $ax^2 + bx + c = 0$ là:
-$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$">Nghiệm của phương trình bậc hai $ax^2 + bx + c = 0$ là:
-$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
+                <textarea id="editor" class="flex-1 w-full p-4 resize-none outline-none text-slate-800 text-base" placeholder="Dán đoạn văn bản thô (có chứa **Câu 1**, A. B. C. D.) vào đây, sau đó nhấn nút 'Chuẩn hóa' ở trên để tự động biến thành mã LaTeX..."></textarea>
             </div>
 
             <!-- Khung Render (Preview) -->
@@ -292,6 +293,32 @@ $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
             document.getElementById('editor').style.fontFamily = fontFamily;
         }
 
+        // --- TÍNH NĂNG CHUẨN HÓA VĂN BẢN (AUTO FORMAT) ---
+        function autoFormatText() {
+            let text = editor.value;
+
+            // 1. Tiêu đề BÀI (Center, Large, Bold)
+            text = text.replace(/^\*\*BÀI:\s*(.*?)\*\*$/gm, '\\begin{center}\n\\Large{\\textbf{BÀI: $1}}\n\\end{center}\n\\hrulefill\n');
+
+            // 2. Tiêu đề Phần (PHẦN 1, PHẦN 2...)
+            text = text.replace(/^\*\*PHẦN\s*(.*?)\*\*$/gm, '\\partheading{PHẦN $1}');
+
+            // 3. Câu X: Chọn Y (Phần lời giải) -> Chữ Đỏ, xuống dòng
+            text = text.replace(/\*\*Câu\s+(\d+):\s+Chọn\s+([A-D])\*\*/g, '\\textbf{\\textcolor{red}{Câu $1: Chọn $2}}\\\\');
+
+            // 4. Câu X: (Phần câu hỏi) -> Chữ Xanh
+            text = text.replace(/\*\*Câu\s+(\d+):\*\*/g, '\\textbf{\\textcolor{blue}{Câu $1:$}}');
+
+            // 5. Dấu --- phân cách -> Đổi thành ngắt dòng và kẻ ngang
+            text = text.replace(/^---$/gm, '\\vspace{0.2cm}\n\\hrulefill\n\\vspace{0.2cm}');
+
+            // (Phần tự động bắt A,B,C,D gỡ bỏ khỏi chuẩn hóa cứng để dành đất cho hệ thống phân tích động thông minh lúc render)
+            
+            editor.value = text;
+            triggerUpdate();
+            showToast("Đã chuẩn hóa văn bản thành công!");
+        }
+
 
         // --- 1. CONFIGURATION FOR MATHTYPE-LIKE TOOLBAR ---
         // Mỗi mục là một nhóm công cụ (tab)
@@ -332,6 +359,7 @@ $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
                 name: 'Văn bản',
                 icon: 'ph-text-t',
                 buttons: [
+                    { label: 'Tiêu đề giữa', tex: '\\begin{center}\n\\Large{*}\n\\end{center}\n', tooltip: 'Căn giữa tiêu đề lớn' },
                     { label: 'Tiêu đề 2 cột', tex: '\\begin{twocolumns}\n\\column\n*Bên trái\n\\column\nBên phải\n\\end{twocolumns}\n', tooltip: 'Tiêu đề 2 cột (Trái / Phải)' },
                     { label: 'Tiêu đề Phần', tex: '\\partheading{*}\n', tooltip: 'Tiêu đề Phần lớn (VD: PHẦN I...)' },
                     { label: 'Mã Đề', tex: '\\examcode{*}\n', tooltip: 'Khung mã đề thi' },
@@ -609,14 +637,14 @@ $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
             }
 
             // 2. Bọc $ hoặc $$ nếu chưa nằm trong môi trường toán học
-            let isSpecialEnv = finalValue.includes('\\begin{mcq}') || finalValue.includes('\\begin{choices}') || finalValue.includes('\\begin{twocolumns}') || finalValue.includes('\\begin{tikzpicture}');
+            let isSpecialEnv = finalValue.includes('\\begin{mcq}') || finalValue.includes('\\begin{choices}') || finalValue.includes('\\begin{twocolumns}') || finalValue.includes('\\begin{tikzpicture}') || finalValue.includes('\\begin{center}');
             let isBlockMath = finalValue.includes('\\begin{') && !isSpecialEnv;
             
             if (!isInsideMath && !isSpecialEnv) {
                 // Không bọc $ nếu là các lệnh cấu trúc đặc biệt không cần $
                 if (isBlockMath) {
                     finalValue = '$$\n' + finalValue + '\n$$';
-                } else if (!myValue.match(/\\textbf|\\textit|\\underline|\\textcolor|\\hrulefill|\\\\|\\answerlines|\\answertwocols|\\fillpage|\\gradingbox|\\partheading|\\examcode|\\shortanswer|\\imageplaceholder/)) {
+                } else if (!myValue.match(/\\textbf|\\textit|\\underline|\\textcolor|\\hrulefill|\\\\|\\answerlines|\\answertwocols|\\fillpage|\\gradingbox|\\partheading|\\examcode|\\shortanswer|\\imageplaceholder|\\Large/)) {
                     finalValue = '$' + finalValue + '$';
                 }
             }
@@ -701,8 +729,34 @@ $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
             showToast("Đang xử lý xuất Word...");
             let rawText = editor.value;
 
+            // --- TÍNH NĂNG ĐỘT PHÁ: Tự động gom khối A. B. C. D. thành bảng đáp án thông minh ---
+            rawText = rawText.replace(/^[ \t]*A\.[ \t]*(.*?)\n+[ \t]*B\.[ \t]*(.*?)\n+[ \t]*C\.[ \t]*(.*?)\n+[ \t]*D\.[ \t]*(.*)/gm, function(match, a, b, c, d) {
+                let opts = [a, b, c, d];
+                let maxLength = Math.max(...opts.map(o => o.trim().length));
+                let cols = 4;
+                if (maxLength > 55) cols = 1;
+                else if (maxLength > 25) cols = 2;
+
+                let html = `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;">`;
+                if (cols === 4) {
+                    html += `<tr><td width="25%" valign="top"><b>A.</b> ${opts[0].trim()}</td><td width="25%" valign="top"><b>B.</b> ${opts[1].trim()}</td><td width="25%" valign="top"><b>C.</b> ${opts[2].trim()}</td><td width="25%" valign="top"><b>D.</b> ${opts[3].trim()}</td></tr>`;
+                } else if (cols === 2) {
+                    html += `<tr><td width="50%" valign="top"><b>A.</b> ${opts[0].trim()}</td><td width="50%" valign="top"><b>B.</b> ${opts[1].trim()}</td></tr>`;
+                    html += `<tr><td width="50%" valign="top"><b>C.</b> ${opts[2].trim()}</td><td width="50%" valign="top"><b>D.</b> ${opts[3].trim()}</td></tr>`;
+                } else {
+                    html += `<tr><td valign="top"><b>A.</b> ${opts[0].trim()}</td></tr>`;
+                    html += `<tr><td valign="top"><b>B.</b> ${opts[1].trim()}</td></tr>`;
+                    html += `<tr><td valign="top"><b>C.</b> ${opts[2].trim()}</td></tr>`;
+                    html += `<tr><td valign="top"><b>D.</b> ${opts[3].trim()}</td></tr>`;
+                }
+                html += `</table>`;
+                return html;
+            });
+
             // Chuyển đổi các định dạng đặc biệt sang HTML mà Word có thể đọc (dùng bảng table)
-            // 1. Tiêu đề 2 cột
+            // 1. Căn giữa
+            rawText = rawText.replace(/\\begin\{center\}([\s\S]*?)\\end\{center\}/g, `<div align="center">$1</div>`);
+            // 2. Tiêu đề 2 cột
             rawText = rawText.replace(/\\begin\{twocolumns\}([\s\S]*?)\\end\{twocolumns\}/g, function(match, content) {
                 let cols = content.split(/\\column/).filter(i => i.trim() !== '');
                 let left = cols[0] ? cols[0].trim().replace(/\\\\(?:\s*\n)?/g, '<br>') : '';
@@ -710,27 +764,40 @@ $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
                 return `<table width="100%" cellpadding="0" cellspacing="0"><tr><td width="50%" valign="top" align="center">${left}</td><td width="50%" valign="top" align="center">${right}</td></tr></table>`;
             });
 
-            // 2. Tiêu đề phần
+            // 3. Tiêu đề phần
             rawText = rawText.replace(/\\partheading\{([^{}]+)\}/g, `<br><b><span style="font-size:14pt; text-transform:uppercase;">$1</span></b><br>`);
 
-            // 3. Khung mã đề thi
+            // 4. Khung mã đề thi
             rawText = rawText.replace(/\\examcode\{([^{}]+)\}/g, `<div style="text-align:right; font-weight:bold;">[ $1 ]</div>`);
 
-            // 4. Khối trắc nghiệm ngang 4 cột
+            // 5. Khối trắc nghiệm từ lệnh chuẩn hóa
             rawText = rawText.replace(/\\begin\{choices\}([\s\S]*?)\\end\{choices\}/g, function(match, content) {
                 let items = content.split(/\\item/).filter(i => i.trim() !== '');
-                let labels = ['A.', 'B.', 'C.', 'D.'];
-                let html = `<table width="100%" cellpadding="0" cellspacing="0"><tr>`;
-                for(let i = 0; i < items.length; i++) {
-                    let label = labels[i] || '';
-                    let itemContent = items[i].trim();
-                    html += `<td width="25%" valign="top"><b>${label}</b> ${itemContent}</td>`;
+                let opts = items.slice(0, 4).map(i => i.trim());
+                while(opts.length < 4) opts.push(''); // Đảm bảo luôn có 4 đáp án
+
+                let maxLength = Math.max(...opts.map(o => o.length));
+                let cols = 4;
+                if (maxLength > 55) cols = 1;
+                else if (maxLength > 25) cols = 2;
+
+                let html = `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 10px;">`;
+                if (cols === 4) {
+                    html += `<tr><td width="25%" valign="top"><b>A.</b> ${opts[0]}</td><td width="25%" valign="top"><b>B.</b> ${opts[1]}</td><td width="25%" valign="top"><b>C.</b> ${opts[2]}</td><td width="25%" valign="top"><b>D.</b> ${opts[3]}</td></tr>`;
+                } else if (cols === 2) {
+                    html += `<tr><td width="50%" valign="top"><b>A.</b> ${opts[0]}</td><td width="50%" valign="top"><b>B.</b> ${opts[1]}</td></tr>`;
+                    html += `<tr><td width="50%" valign="top"><b>C.</b> ${opts[2]}</td><td width="50%" valign="top"><b>D.</b> ${opts[3]}</td></tr>`;
+                } else {
+                    html += `<tr><td valign="top"><b>A.</b> ${opts[0]}</td></tr>`;
+                    html += `<tr><td valign="top"><b>B.</b> ${opts[1]}</td></tr>`;
+                    html += `<tr><td valign="top"><b>C.</b> ${opts[2]}</td></tr>`;
+                    html += `<tr><td valign="top"><b>D.</b> ${opts[3]}</td></tr>`;
                 }
-                html += `</tr></table>`;
+                html += `</table>`;
                 return html;
             });
 
-            // 5. Khối trắc nghiệm 2 cột
+            // 6. Khối trắc nghiệm 2 cột
             rawText = rawText.replace(/\\begin\{mcq\}([\s\S]*?)\\end\{mcq\}/g, function(match, content) {
                 let items = content.split(/\\item/).filter(i => i.trim() !== '');
                 let labels = ['A.', 'B.', 'C.', 'D.', 'E.', 'F.'];
@@ -747,11 +814,11 @@ $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
                 return html;
             });
 
-            // 6. Các ký hiệu ngắn
+            // 7. Các ký hiệu ngắn
             rawText = rawText.replace(/\\shortanswer/g, `<div style="text-align:right; margin-top:5px; margin-bottom:10px;"><b>KQ:</b> [____] [____] [____] [____]</div>`);
             rawText = rawText.replace(/\\imageplaceholder\{([^{}]+)\}/g, `<div style="text-align:center; border:1px solid #000; padding:40px; margin:10px 0;">[Hình ảnh: $1]</div>`);
             
-            // 7. Bảng chấm điểm / Rubric
+            // 8. Bảng chấm điểm / Rubric
             rawText = rawText.replace(/\\begin\{rubric\}([\s\S]*?)\\end\{rubric\}/g, function(match, content) {
                 let items = content.split(/\\item/).filter(i => i.trim() !== '');
                 let html = '<table border="1" cellspacing="0" cellpadding="5" width="100%" style="border-collapse:collapse; margin-top:10px; margin-bottom:10px;">';
@@ -776,13 +843,16 @@ $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
                     let s = parts[i];
                     
                     // SỬA LỖI DÍNH CHỮ KHI XUẤT WORD: Word thường bỏ qua khoảng trắng quanh thẻ <math>.
-                    // Thay thế khoảng trắng ở 2 đầu chuỗi văn bản (tiếp giáp với công thức) thành &nbsp;
+                    // Thay thế khoảng trắng ở 2 đầu chuỗi văn bản (tiếp tiếp giáp với công thức) thành &nbsp;
                     if (i > 0) {
                         s = s.replace(/^[ \t]+/, (m) => '&nbsp;'.repeat(m.length));
                     }
                     if (i < parts.length - 1) {
                         s = s.replace(/[ \t]+$/, (m) => '&nbsp;'.repeat(m.length));
                     }
+
+                    // --- TÍNH NĂNG MỚI: Tự động in đậm văn bản trong cặp dấu ** ---
+                    s = s.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 
                     // Thay thế định dạng chữ
                     const replaceCmd = (text, cmd, openTag, closeTag) => {
@@ -797,6 +867,7 @@ $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
                     s = replaceCmd(s, 'textbf', '<b>', '</b>');
                     s = replaceCmd(s, 'textit', '<i>', '</i>');
                     s = replaceCmd(s, 'underline', '<u>', '</u>');
+                    s = replaceCmd(s, 'Large', '<span style="font-size: 18pt;">', '</span>');
                     
                     const colorRegex = /\\textcolor\{([^{}]+)\}\{((?:[^{}]|\\{[^{}]*\\})*)\}/g;
                     let newS = s.replace(colorRegex, '<span style="color: $1;">$2</span>');
@@ -920,7 +991,190 @@ $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
             }
 
             let templateCode = "";
-            if (type === 'test_2025') {
+            if (type === 'test_line') {
+                templateCode = `\\begin{center}
+\\textbf{\\Large{BÀI: PHƯƠNG TRÌNH ĐƯỜNG THẲNG}}
+\\end{center}
+\\hrulefill
+
+\\partheading{PHẦN 1: ĐỀ THI TRẮC NGHIỆM (10 CÂU)}
+
+\\textbf{\\textcolor{blue}{Câu 1:}} Trong mặt phẳng tọa độ $Oxy$, cho đường thẳng $d$ có phương trình tổng quát: $2x - 3y + 5 = 0$. Một vectơ pháp tuyến của $d$ là:
+A. $\\vec{n} = (2; 3)$
+B. $\\vec{n} = (-3; 2)$
+C. $\\vec{n} = (2; -3)$
+D. $\\vec{n} = (-2; -3)$
+
+\\textbf{\\textcolor{blue}{Câu 2:}} Đường thẳng đi qua điểm $M(1; -2)$ và có vectơ chỉ phương $\\vec{u} = (3; 4)$ có phương trình tham số là:
+A. $\\begin{cases} x = 3 + t \\\\ y = 4 - 2t \\end{cases}$
+B. $\\begin{cases} x = 1 + 4t \\\\ y = -2 - 3t \\end{cases}$
+C. $\\begin{cases} x = -1 + 3t \\\\ y = 2 + 4t \\end{cases}$
+D. $\\begin{cases} x = 1 + 3t \\\\ y = -2 + 4t \\end{cases}$
+
+\\textbf{\\textcolor{blue}{Câu 3:}} Viết phương trình tổng quát của đường thẳng đi qua điểm $A(2; 1)$ và có vectơ pháp tuyến $\\vec{n} = (1; -2)$.
+A. $x - 2y - 4 = 0$
+B. $x - 2y = 0$
+C. $2x + y - 5 = 0$
+D. $x + 2y - 4 = 0$
+
+\\textbf{\\textcolor{blue}{Câu 4:}} Đường thẳng $\\Delta$ đi qua $A(-1; 2)$ và vuông góc với đường thẳng $d: x + 2y - 3 = 0$ có phương trình là:
+A. $x + 2y - 3 = 0$
+B. $2x + y = 0$
+C. $2x - y + 4 = 0$
+D. $2x - y - 4 = 0$
+
+\\textbf{\\textcolor{blue}{Câu 5:}} Phương trình đường thẳng đi qua hai điểm $A(1; 3)$ và $B(2; 5)$ là:
+A. $2x - y + 1 = 0$
+B. $x - 2y + 5 = 0$
+C. $2x + y - 5 = 0$
+D. $2x - y - 1 = 0$
+
+\\textbf{\\textcolor{blue}{Câu 6:}} Tính khoảng cách từ điểm $M(1; -1)$ đến đường thẳng $\\Delta: 3x - 4y + 8 = 0$.
+A. $2$
+B. $\\frac{15}{\\sqrt{7}}$
+C. $3$
+D. $\\frac{8}{5}$
+
+\\textbf{\\textcolor{blue}{Câu 7:}} Số đo góc giữa hai đường thẳng $d_1: 2x - y + 5 = 0$ và $d_2: x - 3y + 2 = 0$ là:
+A. $30^\\circ$
+B. $45^\\circ$
+C. $60^\\circ$
+D. $90^\\circ$
+
+\\textbf{\\textcolor{blue}{Câu 8:}} Xét vị trí tương đối của hai đường thẳng $d_1: 2x - 3y + 1 = 0$ và $d_2: 4x - 6y - 5 = 0$.
+A. Trùng nhau
+B. Cắt nhưng không vuông góc
+C. Vuông góc
+D. Song song
+
+\\textbf{\\textcolor{blue}{Câu 9:}} Tìm tọa độ hình chiếu vuông góc $H$ của điểm $A(1; 1)$ lên đường thẳng $d: x + 2y - 8 = 0$.
+A. $H(0; 4)$
+B. $H(4; 2)$
+C. $H(2; 3)$
+D. $H(3; 2)$
+
+\\textbf{\\textcolor{blue}{Câu 10:}} Tìm tham số $m$ để đường thẳng $d_1: mx + (m-1)y + 2 = 0$ vuông góc với đường thẳng $d_2: 2x + y - 1 = 0$.
+A. $m = \\frac{1}{3}$
+B. $m = 1$
+C. $m = -1$
+D. $m = -\\frac{1}{3}$
+
+\\newpage
+
+\\partheading{PHẦN 2: LỜI GIẢI CHI TIẾT}
+
+\\textbf{\\textcolor{red}{Câu 1: Chọn C}}\\\\
+Từ phương trình tổng quát $2x - 3y + 5 = 0$, ta xác định được hệ số $A = 2, B = -3$. 
+Do đó, vectơ pháp tuyến của đường thẳng là $\\vec{n} = (2; -3)$.
+
+\\textbf{\\textcolor{red}{Câu 2: Chọn D}}\\\\
+Phương trình tham số của đường thẳng đi qua điểm $M(x_0; y_0)$ và nhận vectơ chỉ phương $\\vec{u} = (a; b)$ làm VTCP là $\\begin{cases} x = x_0 + at \\\\ y = y_0 + bt \\end{cases}$.
+Thay $M(1; -2)$ và $\\vec{u} = (3; 4)$ vào, ta được: $\\begin{cases} x = 1 + 3t \\\\ y = -2 + 4t \\end{cases}$.
+
+\\textbf{\\textcolor{red}{Câu 3: Chọn B}}\\\\
+Phương trình tổng quát đi qua $A(2; 1)$ nhận $\\vec{n} = (1; -2)$ làm VTPT có dạng:
+$1(x - 2) - 2(y - 1) = 0 \\Leftrightarrow x - 2 - 2y + 2 = 0 \\Leftrightarrow x - 2y = 0$.
+
+\\textbf{\\textcolor{red}{Câu 4: Chọn C}}\\\\
+Đường thẳng $d$ có VTPT $\\vec{n}_d = (1; 2)$.
+Vì $\\Delta \\perp d$ nên VTPT của $\\Delta$ là $\\vec{n}_\\Delta = (2; -1)$.
+$\\Delta$ đi qua $A(-1; 2)$ nên có phương trình:
+$2(x + 1) - 1(y - 2) = 0 \\Leftrightarrow 2x - y + 4 = 0$.
+
+\\textbf{\\textcolor{red}{Câu 5: Chọn A}}\\\\
+Ta có $\\vec{AB} = (1; 2)$. Đường thẳng $AB$ nhận $\\vec{AB}$ làm vectơ chỉ phương nên có vectơ pháp tuyến $\\vec{n} = (2; -1)$.
+Phương trình đường thẳng $AB$ đi qua $A(1; 3)$:
+$2(x - 1) - 1(y - 3) = 0 \\Leftrightarrow 2x - y + 1 = 0$.
+
+\\textbf{\\textcolor{red}{Câu 6: Chọn C}}\\\\
+Áp dụng công thức tính khoảng cách từ điểm $M(x_0; y_0)$ đến $\\Delta: Ax + By + C = 0$:
+$$d(M, \\Delta) = \\frac{|3(1) - 4(-1) + 8|}{\\sqrt{3^2 + (-4)^2}} = \\frac{|3 + 4 + 8|}{\\sqrt{25}} = \\frac{15}{5} = 3.$$
+
+\\textbf{\\textcolor{red}{Câu 7: Chọn B}}\\\\
+VTPT của hai đường thẳng lần lượt là $\\vec{n}_1 = (2; -1)$ và $\\vec{n}_2 = (1; -3)$.
+$$\\cos(\\widehat{d_1, d_2}) = \\frac{|\\vec{n}_1 \\cdot \\vec{n}_2|}{|\\vec{n}_1| |\\vec{n}_2|} = \\frac{|2 \\cdot 1 + (-1) \\cdot (-3)|}{\\sqrt{2^2 + (-1)^2} \\cdot \\sqrt{1^2 + (-3)^2}} = \\frac{5}{\\sqrt{5} \\cdot \\sqrt{10}} = \\frac{5}{5\\sqrt{2}} = \\frac{1}{\\sqrt{2}}$$
+Suy ra góc giữa hai đường thẳng là $45^\\circ$.
+
+\\textbf{\\textcolor{red}{Câu 8: Chọn D}}\\\\
+Xét tỉ lệ hệ số của $d_1$ và $d_2$:
+Ta có: $\\frac{2}{4} = \\frac{-3}{-6} \\neq \\frac{1}{-5}$ (vì $\\frac{1}{2} = \\frac{1}{2} \\neq -\\frac{1}{5}$).
+Vậy hai đường thẳng song song với nhau.
+
+\\textbf{\\textcolor{red}{Câu 9: Chọn C}}\\\\
+Gọi $\\Delta$ là đường thẳng đi qua $A(1; 1)$ và vuông góc với $d$.
+$\\Delta$ nhận VTCP của $d$ là $\\vec{u}_d = (2; -1)$ làm VTPT $\\Rightarrow$ Phương trình $\\Delta: 2(x - 1) - 1(y - 1) = 0 \\Leftrightarrow 2x - y - 1 = 0$.
+Tọa độ hình chiếu $H$ là nghiệm của hệ phương trình:
+$$\\begin{cases} x + 2y - 8 = 0 \\\\ 2x - y - 1 = 0 \\end{cases} \\Leftrightarrow \\begin{cases} x + 2y = 8 \\\\ 2x - y = 1 \\end{cases} \\Leftrightarrow \\begin{cases} x = 2 \\\\ y = 3 \\end{cases} \\Rightarrow H(2; 3).$$
+
+\\textbf{\\textcolor{red}{Câu 10: Chọn A}}\\\\
+VTPT của $d_1$ là $\\vec{n}_1 = (m; m-1)$, VTPT của $d_2$ là $\\vec{n}_2 = (2; 1)$.
+Để $d_1 \\perp d_2$ thì $\\vec{n}_1 \\cdot \\vec{n}_2 = 0$
+$\\Leftrightarrow 2m + 1(m - 1) = 0 \\Leftrightarrow 3m - 1 = 0 \\Leftrightarrow m = \\frac{1}{3}$.`;
+            } else if (type === 'test_circle') {
+                templateCode = `\\begin{center}
+\\textbf{\\Large{PHƯƠNG TRÌNH ĐƯỜNG TRÒN}}
+\\end{center}
+\\hrulefill
+
+\\vspace{0.2cm}
+\\textbf{\\textcolor{red}{Dạng 1: Nhận dạng và các yếu tố cơ bản của đường tròn}}
+
+\\textbf{\\textcolor{blue}{Câu 1:}} Xác định tọa độ tâm $I$ và tính bán kính $R$ của đường tròn $(C)$ có phương trình sau:
+$$x^2 + y^2 - 4x + 6y - 12 = 0$$
+\\answerlines{3}
+
+\\textbf{\\textcolor{blue}{Câu 2:}} Cho phương trình $x^2 + y^2 - 2mx + 4(m-1)y + 5m^2 - 2 = 0$. Tìm điều kiện của tham số $m$ để phương trình đã cho là phương trình của một đường tròn.
+\\answerlines{4}
+
+\\textbf{\\textcolor{red}{Dạng 2: Viết phương trình đường tròn khi biết các yếu tố đặc trưng}}
+
+\\textbf{\\textcolor{blue}{Câu 3 (Tâm và bán kính):}} Viết phương trình đường tròn $(C)$ có tâm $I(2; -3)$ và bán kính $R = 5$.
+\\answerlines{3}
+
+\\textbf{\\textcolor{blue}{Câu 4 (Tâm và điểm đi qua):}} Viết phương trình đường tròn $(C)$ có tâm $I(-1; 2)$ và đi qua điểm $A(3; 5)$.
+\\answerlines{4}
+
+\\textbf{\\textcolor{blue}{Câu 5 (Đường kính):}} Viết phương trình đường tròn $(C)$ nhận đoạn thẳng $AB$ làm đường kính, biết tọa độ hai điểm $A(1; 1)$ và $B(7; 5)$.
+\\answerlines{4}
+
+\\textbf{\\textcolor{blue}{Câu 6 (Đi qua 3 điểm):}} Viết phương trình đường tròn $(C)$ đi qua ba điểm không thẳng hàng $A(1; 2)$, $B(5; 2)$ và $C(1; -3)$.
+\\answerlines{5}
+
+\\textbf{\\textcolor{blue}{Câu 7 (Tiếp xúc đường thẳng):}} Viết phương trình đường tròn $(C)$ có tâm $I(3; 4)$ và tiếp xúc với đường thẳng $\\Delta: 3x + 4y - 5 = 0$.
+\\answerlines{4}
+
+\\newpage
+
+\\textbf{\\textcolor{red}{Dạng 3: Tiếp tuyến và sự tương giao}}
+
+\\textbf{\\textcolor{blue}{Câu 8 (Tiếp tuyến tại 1 điểm):}} Cho đường tròn $(C)$ có phương trình $(x - 1)^2 + (y + 2)^2 = 25$. Viết phương trình tiếp tuyến của $(C)$ tại điểm $M(4; 2)$ nằm trên đường tròn.
+\\answerlines{4}
+
+\\textbf{\\textcolor{blue}{Câu 9 (Tương giao với đường thẳng):}} Tìm tọa độ các giao điểm của đường thẳng $d: x - y + 2 = 0$ và đường tròn $(C): x^2 + y^2 - 4x - 2y - 4 = 0$. Tính độ dài dây cung tạo thành bởi hai giao điểm đó.
+\\answerlines{5}
+
+\\textbf{\\textcolor{blue}{Câu 10 (Tiếp tuyến kẻ từ điểm ngoài đường tròn):}} Cho đường tròn $(C): x^2 + y^2 - 2x + 4y - 4 = 0$ và điểm $A(4; 3)$. Viết phương trình các tiếp tuyến kẻ từ điểm $A$ đến đường tròn $(C)$.
+\\answerlines{6}
+
+\\newpage
+\\begin{center}
+\\textbf{\\Large{ĐÁP ÁN THAM KHẢO NHANH}}
+\\end{center}
+\\hrulefill
+
+\\begin{rubric}
+  \\item \\textbf{Câu 1:} Tâm $I(2; -3)$, bán kính $R = 5$. | 1.0
+  \\item \\textbf{Câu 2:} Điều kiện: $m < \\frac{3}{4}$. | 1.0
+  \\item \\textbf{Câu 3:} $(x - 2)^2 + (y + 3)^2 = 25$. | 1.0
+  \\item \\textbf{Câu 4:} Bán kính $R = IA = 5 \\Rightarrow (x + 1)^2 + (y - 2)^2 = 25$. | 1.0
+  \\item \\textbf{Câu 5:} Tâm $I(4; 3)$ (trung điểm $AB$), $R = \\sqrt{13} \\Rightarrow (x - 4)^2 + (y - 3)^2 = 13$. | 1.0
+  \\item \\textbf{Câu 6:} Phương trình: $x^2 + y^2 - 6x + y - 1 = 0$. | 1.0
+  \\item \\textbf{Câu 7:} Bán kính $R = d(I, \\Delta) = 4 \\Rightarrow (x - 3)^2 + (y - 4)^2 = 16$. | 1.0
+  \\item \\textbf{Câu 8:} Vectơ pháp tuyến $\\vec{n} = \\vec{IM} = (3; 4)$. Phương trình tiếp tuyến: $3x + 4y - 20 = 0$. | 1.0
+  \\item \\textbf{Câu 9:} Hai giao điểm là $M(-1; 1)$ và $N(2; 4)$. Độ dài dây cung $MN = 3\\sqrt{2}$. | 1.0
+  \\item \\textbf{Câu 10:} Có 2 tiếp tuyến thỏa mãn: $x - 4 = 0$ và $8x - 15y + 13 = 0$. | 1.0
+\\end{rubric}`;
+            } else if (type === 'test_2025') {
                 templateCode = `\\begin{twocolumns}
 \\column
 \\textbf{THPT NGUYỄN HỮU CẢNH}\\\\
@@ -1235,8 +1489,30 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
             statusEl.className = 'text-xs text-amber-500 font-medium animate-pulse';
 
             let rawText = editor.value;
+
+            // --- TÍNH NĂNG MỚI: Nhận diện trực tiếp khối A, B, C, D (Real-time formatting) ---
+            rawText = rawText.replace(/^[ \t]*A\.[ \t]*(.*?)\n+[ \t]*B\.[ \t]*(.*?)\n+[ \t]*C\.[ \t]*(.*?)\n+[ \t]*D\.[ \t]*(.*)/gm, function(match, a, b, c, d) {
+                let opts = [a, b, c, d];
+                // Tính độ dài lớn nhất của các phương án để quyết định chia 4, 2 hay 1 cột
+                let maxLength = Math.max(...opts.map(o => o.trim().length));
+                let cols = 4;
+                if (maxLength > 55) cols = 1;
+                else if (maxLength > 25) cols = 2;
+
+                let gridClass = cols === 4 ? 'grid-cols-4' : (cols === 2 ? 'grid-cols-2' : 'grid-cols-1');
+                let labels = ['A.', 'B.', 'C.', 'D.'];
+                let html = `<div class="grid ${gridClass} gap-y-2 gap-x-4 my-2 w-full avoid-break clear-both">`;
+                for(let i=0; i<4; i++) {
+                    html += `<div class="flex items-start gap-1"><span class="font-bold">${labels[i]}</span><div class="flex-1">${opts[i].trim()}</div></div>`;
+                }
+                html += `</div>`;
+                return html;
+            });
             
             // --- CÁC HÀM CẤU TRÚC ĐẶC BIỆT MỚI ---
+
+            // Căn giữa
+            rawText = rawText.replace(/\\begin\{center\}([\s\S]*?)\\end\{center\}/g, `<div class="text-center w-full avoid-break clear-both">$1</div>`);
 
             // Tiêu đề 2 cột
             rawText = rawText.replace(/\\begin\{twocolumns\}([\s\S]*?)\\end\{twocolumns\}/g, function(match, content) {
@@ -1259,10 +1535,17 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
             rawText = rawText.replace(/\\begin\{choices\}([\s\S]*?)\\end\{choices\}/g, function(match, content) {
                 let items = content.split(/\\item/).filter(i => i.trim() !== '');
                 let labels = ['A.', 'B.', 'C.', 'D.'];
-                let gridHtml = '<div class="grid grid-cols-4 gap-y-2 gap-x-4 my-2 w-full avoid-break clear-both">';
-                for(let i = 0; i < items.length; i++) {
+                let opts = items.slice(0, 4);
+                let maxLength = Math.max(...opts.map(o => o.trim().length));
+                let cols = 4;
+                if (maxLength > 55) cols = 1;
+                else if (maxLength > 25) cols = 2;
+
+                let gridClass = cols === 4 ? 'grid-cols-4' : (cols === 2 ? 'grid-cols-2' : 'grid-cols-1');
+                let gridHtml = `<div class="grid ${gridClass} gap-y-2 gap-x-4 my-2 w-full avoid-break clear-both">`;
+                for(let i = 0; i < opts.length; i++) {
                     let label = labels[i] || '';
-                    let itemContent = items[i].trim();
+                    let itemContent = opts[i].trim();
                     gridHtml += `<div class="flex items-start gap-1"><span class="font-bold">${label}</span><div class="flex-1">${itemContent}</div></div>`;
                 }
                 gridHtml += '</div>';
@@ -1332,6 +1615,9 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
                 if (i % 2 === 0) {
                     let s = parts[i];
                     
+                    // --- TÍNH NĂNG MỚI: Tự động in đậm văn bản trong cặp dấu ** ---
+                    s = s.replace(/\*\*(.*?)\*\*/g, '<b class="font-bold text-slate-900">$1</b>');
+
                     // Hàm xử lý các lệnh định dạng (hỗ trợ lệnh lồng nhau như \textcolor{}{\textbf{}})
                     const replaceCmd = (text, cmd, openTag, closeTag) => {
                         const regex = new RegExp(`\\\\${cmd}\\{((?:[^{}]|\\{[^{}]*\\})*)\\}`, 'g');
@@ -1346,6 +1632,7 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
                     s = replaceCmd(s, 'textbf', '<b class="font-bold text-slate-900">', '</b>');
                     s = replaceCmd(s, 'textit', '<i class="italic">', '</i>');
                     s = replaceCmd(s, 'underline', '<u class="underline underline-offset-2">', '</u>');
+                    s = replaceCmd(s, 'Large', '<span class="text-[1.35em]">', '</span>');
 
                     // Xử lý lệnh màu sắc: \textcolor{color}{text}
                     const colorRegex = /\\textcolor\{([^{}]+)\}\{((?:[^{}]|\\{[^{}]*\\})*)\}/g;
@@ -1447,7 +1734,7 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
                         
                         // Chuyển mã TikZ vào thẻ script để TikZJax tự động nhận diện và render.
                         // Thêm class tex2jax_ignore để khóa MathJax không cho chui vào làm hỏng các ký tự toán học ($x$, $y$) bên trong mã vẽ.
-                        parts[i] = `<div class="flex justify-center my-4 avoid-break clear-both tex2jax_ignore"><script type="text/tikz">${tikzPayload}<\/script></div>`;
+                        parts[i] = `<div class="flex justify-center my-4 avoid-break clear-both tex2jax_ignore"><script type="text/tikz">${tikzPayload}<\/scr` + `ipt></div>`;
                     }
                 }
             }
@@ -1468,7 +1755,8 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
             tikzScripts.forEach(oldScript => {
                 const newScript = document.createElement('script');
                 newScript.type = 'text/tikz';
-                newScript.textContent = oldScript.textContent;
+                newScript.setAttribute('data-show-console', 'true');
+                newScript.text = oldScript.textContent; // Cực kỳ quan trọng, dùng .text hoặc .textContent
                 oldScript.parentNode.replaceChild(newScript, oldScript);
             });
 
