@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình Soạn Thảo LaTeX Chuyên Nghiệp - Thầy Việt</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Phosphor Icons (for MathType-like UI icons) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- MathJax Configuration and Script -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                // Bổ sung gói 'color' để MathJax có thể hiểu các lệnh màu sắc nếu bạn gõ trong môi trường toán
+                packages: {'[+]': ['noerrors', 'color']} 
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        console.log('MathJax initial typesetting complete');
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- TikZJax cho việc render hình ảnh đồ họa TikZ -->
+    <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
+    <script src="https://tikzjax.com/v1/tikzjax.js"></script>
+
+    <style>
+        /* Custom Scrollbar for a polished look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8; 
+        }
+
+        /* Editor Styling */
+        #editor {
+            font-family: 'Courier New', Courier, monospace;
+            tab-size: 4;
+        }
+
+        /* MathJax Preview Container styles */
+        #preview-container {
+            font-family: 'Times New Roman', Times, serif; /* Mặc định là Times New Roman */
+            font-size: 12pt;
+            line-height: 1.35; /* Giảm giãn dòng trên màn hình */
+            color: #000;
+        }
+        
+        .toolbar-group {
+            display: none;
+        }
+        .toolbar-group.active {
+            display: flex;
+        }
+
+        /* Style bổ sung cho SVG của TikZJax */
+        svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* --- CHẾ ĐỘ IN PDF (A4, TỐI GIẢN, TIẾT KIỆM MỰC) --- */
+        @media print {
+            @page {
+                size: A4;
+                margin: 12mm; /* Lề nhỏ nhất có thể để máy in không cắt chữ */
+            }
+            
+            /* Đảm bảo in đủ viền, nền và nét đứt */
+            body, html {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Ẩn Header, Thanh công cụ, Khung gõ mã, Tiêu đề khung render và thông báo */
+            header, 
+            main > section:nth-child(1), 
+            main > section:nth-child(2) > div:nth-child(1),
+            main > section:nth-child(2) > div:nth-child(2) > div:first-child,
+            #toast {
+                display: none !important;
+            }
+
+            /* Reset các thẻ bọc để in mượt mà, gỡ bỏ thanh cuộn và viền bao ngoài */
+            body, html, main, 
+            main > section:nth-child(2), 
+            main > section:nth-child(2) > div:nth-child(2),
+            main > section:nth-child(2) > div:nth-child(2) > div:nth-child(2) {
+                display: block !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                background-color: #fff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none !important; /* Xóa bỏ đường viền của khung chứa */
+                border-radius: 0 !important; /* Loại bỏ bo góc khi in */
+            }
+
+            /* Xóa đổ bóng nhưng GIỮ LẠI viền để hiển thị dòng kẻ và ô trắc nghiệm */
+            * {
+                box-shadow: none !important;
+            }
+
+            /* Căn chỉnh lại khung chứa nội dung in */
+            #preview-container {
+                display: block !important;
+                overflow: visible !important;
+                height: auto !important;
+                min-height: auto !important;
+                width: auto !important;
+                padding: 0 !important;
+                /* Bỏ đi font-size: 12pt !important để tôn trọng điều chỉnh của người dùng */
+                line-height: 1.25 !important; /* Giãn dòng tối thiểu để tiết kiệm không gian */
+            }
+
+            p {
+                margin-bottom: 0.25rem !important; /* Thu hẹp khoảng cách các đoạn văn */
+            }
+
+            /* Tránh cắt ngang công thức toán, đoạn văn, bảng điểm, hình ảnh TikZ và các đáp án trắc nghiệm khi ngắt trang */
+            mjx-container, p, .grid > div, table, tr, .rubric-row, .avoid-break, svg {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 h-screen flex flex-col overflow-hidden text-slate-800">
+
+    <!-- Header -->
+    <header class="bg-blue-800 text-white p-4 shadow-md flex justify-between items-center shrink-0">
+        <div>
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i class="ph ph-math-operations"></i> Soạn Thảo LaTeX Thông Minh
+            </h1>
+            <p class="text-blue-200 text-sm mt-1">Được thiết kế bởi chuyên gia LaTeX với 20 năm kinh nghiệm giảng dạy</p>
+        </div>
+        <div class="flex gap-4 items-center">
+            <!-- Thêm Dropdown chọn mẫu đề thi -->
+            <select id="template-select" onchange="loadTemplate(this.value)" class="bg-blue-700 hover:bg-blue-600 text-white border border-blue-500 rounded px-3 py-2 text-sm font-medium transition cursor-pointer outline-none focus:ring-2 focus:ring-blue-300">
+                <option value="">📋 Chèn mẫu đề thi...</option>
+                <option value="test_2025">Đề thi 2025 (Cấu trúc mới: 3 Phần)</option>
+                <option value="test45">Đề kiểm tra 45 phút (1 tiết)</option>
+                <option value="test90">Đề thi học kì (90 phút)</option>
+                <option value="test_grading">Đề kiểm tra (Có khung điểm & lời phê)</option>
+                <option value="test_rubric">Đề có đáp án & thang điểm (Hàng kẻ)</option>
+            </select>
+
+            <button onclick="downloadTex()" class="bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium">
+                <i class="ph ph-download-simple"></i> Tải file .tex
+            </button>
+            <button onclick="printPDF()" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium">
+                <i class="ph ph-printer"></i> In PDF (A4)
+            </button>
+            <button onclick="clearEditor()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium">
+                <i class="ph ph-trash"></i> Xóa bảng
+            </button>
+            <button onclick="copyLaTeX()" class="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded transition flex items-center gap-2 text-sm font-medium">
+                <i class="ph ph-copy"></i> Copy Mã LaTeX
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col max-h-full overflow-hidden">
+        
+        <!-- SECTION 1: Toolbar (MathType Style) -->
+        <section class="bg-white border-b border-slate-300 shadow-sm shrink-0 flex flex-col">
+            <!-- Tabs and Font Controls -->
+            <div class="flex justify-between border-b border-slate-200 bg-slate-50 items-center">
+                <div class="flex overflow-x-auto" id="toolbar-tabs">
+                    <!-- Tabs will be injected by JS -->
+                </div>
+                
+                <!-- Font Controls -->
+                <div class="flex items-center gap-3 px-4 shrink-0 border-l border-slate-200 py-1 hidden sm:flex">
+                    <div class="flex items-center gap-1 title-tooltip" title="Đổi kiểu font chữ">
+                        <i class="ph ph-text-aa text-slate-500 text-lg"></i>
+                        <select id="font-family" onchange="changeFont()" class="text-sm border border-slate-300 rounded px-2 py-1 outline-none bg-white focus:ring-1 focus:ring-blue-500 cursor-pointer">
+                            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="Cambria, Georgia, serif">Cambria</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center border border-slate-300 rounded bg-white overflow-hidden shadow-sm" title="Tăng/giảm cỡ chữ">
+                        <button onclick="changeFontSize(-1)" class="px-2 py-1 bg-slate-50 hover:bg-slate-200 text-slate-600 border-r border-slate-300 transition flex items-center justify-center"><i class="ph ph-minus"></i></button>
+                        <span id="font-size-display" class="px-2 text-sm text-slate-700 min-w-[3rem] text-center font-medium">12pt</span>
+                        <button onclick="changeFontSize(1)" class="px-2 py-1 bg-slate-50 hover:bg-slate-200 text-slate-600 border-l border-slate-300 transition flex items-center justify-center"><i class="ph ph-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tool Buttons -->
+            <div class="p-3 bg-slate-100 min-h-[70px]" id="toolbar-panels">
+                <!-- Panels will be injected by JS -->
+            </div>
+        </section>
+
+        <!-- SECTION 2 & 3: Split Pane (Editor & Preview) -->
+        <section class="flex-1 flex flex-col lg:flex-row overflow-hidden bg-slate-200 p-2 gap-2">
+            
+            <!-- Khung Soạn Thảo (Editor) -->
+            <div class="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-slate-300 overflow-hidden relative">
+                <div class="bg-slate-100 border-b border-slate-200 px-3 py-2 flex justify-between items-center shrink-0">
+                    <span class="font-semibold text-slate-700 flex items-center gap-2">
+                        <i class="ph ph-code"></i> Mã nguồn LaTeX
+                    </span>
+                    <span class="text-xs text-slate-500">Mẹo: Nhấn Ctrl+F (Phân số), Ctrl+Q (Căn)</span>
+                </div>
+                <textarea id="editor" class="flex-1 w-full p-4 resize-none outline-none text-slate-800 text-base" placeholder="Nhập mã LaTeX của bạn vào đây hoặc sử dụng thanh công cụ bên trên...
+
+Ví dụ: 
+Nghiệm của phương trình bậc hai $ax^2 + bx + c = 0$ là:
+$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$">Nghiệm của phương trình bậc hai $ax^2 + bx + c = 0$ là:
+$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$</textarea>
+            </div>
+
+            <!-- Khung Render (Preview) -->
+            <div class="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-slate-300 overflow-hidden">
+                <div class="bg-slate-100 border-b border-slate-200 px-3 py-2 flex justify-between items-center shrink-0 z-10 shadow-sm relative">
+                    <span class="font-semibold text-slate-700 flex items-center gap-2">
+                        <i class="ph ph-file-pdf text-red-500 text-lg"></i> Xem trước (Khổ A4)
+                    </span>
+                    <span id="render-status" class="text-xs text-emerald-600 font-medium">Đã cập nhật</span>
+                </div>
+                <!-- Vùng nền xám chứa tờ giấy A4 -->
+                <div class="flex-1 w-full bg-slate-400/30 overflow-auto p-4 sm:p-8 flex justify-center items-start">
+                    <!-- Tờ giấy A4 -->
+                    <div id="preview-container" class="bg-white shadow-xl shrink-0 w-[210mm] min-h-[297mm] px-[20mm] py-[25mm] tex2jax_process">
+                        <!-- MathJax will render here -->
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        Đã copy vào clipboard!
+    </div>
+
+    <script>
+        // --- 0. UI CONTROLS (FONT) ---
+        let currentFontSize = 12;
+
+        function changeFontSize(delta) {
+            currentFontSize += delta;
+            // Giới hạn kích cỡ chữ từ 10pt đến 18pt
+            if (currentFontSize < 10) currentFontSize = 10;
+            if (currentFontSize > 18) currentFontSize = 18;
+            
+            document.getElementById('font-size-display').textContent = currentFontSize + 'pt';
+            document.getElementById('preview-container').style.fontSize = currentFontSize + 'pt';
+            document.getElementById('editor').style.fontSize = (currentFontSize + 2) + 'px'; // Editor to hơn 1 chút cho dễ nhìn
+        }
+
+        function changeFont() {
+            const fontFamily = document.getElementById('font-family').value;
+            document.getElementById('preview-container').style.fontFamily = fontFamily;
+            document.getElementById('editor').style.fontFamily = fontFamily;
+        }
+
+
+        // --- 1. CONFIGURATION FOR MATHTYPE-LIKE TOOLBAR ---
+        // Mỗi mục là một nhóm công cụ (tab)
+        const toolbarConfig = [
+            {
+                id: 'basic',
+                name: 'Cơ bản',
+                icon: 'ph-calculator',
+                buttons: [
+                    { label: 'Phân số', tex: '\\frac{}{*}{}', tooltip: '\\frac{a}{b}' },
+                    { label: 'Căn bậc 2', tex: '\\sqrt{*}', tooltip: '\\sqrt{x}' },
+                    { label: 'Căn bậc n', tex: '\\sqrt[*]{}', tooltip: '\\sqrt[n]{x}' },
+                    { label: 'Mũ', tex: '^{*\}', tooltip: 'x^n' },
+                    { label: 'Chỉ số', tex: '_{*}', tooltip: 'x_n' },
+                    { label: 'Trị tuyệt đối', tex: '\\left| * \\right|', tooltip: '|x|' },
+                    { label: 'Ngoặc tròn', tex: '\\left( * \\right)', tooltip: '(x)' },
+                    { label: 'Ngoặc vuông', tex: '\\left[ * \\right]', tooltip: '[x]' },
+                    { label: 'Ngoặc nhọn', tex: '\\left\\{ * \\right\\}', tooltip: '{x}' },
+                    { label: 'Tổ hợp', tex: 'C_{n}^{k}', tooltip: 'C_n^k' },
+                    { label: 'Chỉnh hợp', tex: 'A_{n}^{k}', tooltip: 'A_n^k' },
+                    { label: 'Chuẩn', tex: '\\left\\| * \\right\\|', tooltip: '||x|| (Chuẩn)' },
+                ]
+            },
+            {
+                id: 'tikz',
+                name: 'Vẽ Hình (TikZ)',
+                icon: 'ph-shapes',
+                buttons: [
+                    { label: 'Khung TikZ', tex: '\\begin{tikzpicture}\n  \\draw[thick] (0,0) -- (2,2);\n  \\fill[red] (2,2) circle (2pt) node[right] {A};\n\\end{tikzpicture}\n', tooltip: 'Khung vẽ hình cơ bản bằng TikZ' },
+                    { label: 'Hệ trục Oxy', tex: '\\begin{tikzpicture}[>=stealth, scale=1]\n  \\draw[->] (-1,0) -- (4,0) node[right] {$x$};\n  \\draw[->] (0,-1) -- (0,4) node[above] {$y$};\n  \\fill (0,0) circle (1.5pt) node[below left] {$O$};\n\\end{tikzpicture}\n', tooltip: 'Vẽ hệ trục tọa độ Oxy' },
+                    { label: 'Tam giác', tex: '\\begin{tikzpicture}[scale=1]\n  \\coordinate (A) at (1,3);\n  \\coordinate (B) at (0,0);\n  \\coordinate (C) at (4,0);\n  \\draw[thick] (A) node[above]{$A$} -- (B) node[below left]{$B$} -- (C) node[below right]{$C$} -- cycle;\n\\end{tikzpicture}\n', tooltip: 'Vẽ tam giác ABC' },
+                    { label: 'Đường tròn', tex: '\\begin{tikzpicture}\n  \\coordinate (O) at (0,0);\n  \\draw[thick] (O) circle (2cm);\n  \\fill (O) circle (1.5pt) node[below] {$O$};\n\\end{tikzpicture}\n', tooltip: 'Vẽ đường tròn tâm O' },
+                    { label: 'Hình hộp (3D)', tex: '\\begin{tikzpicture}[scale=1]\n  \\draw[thick] (0,0) coordinate (A) -- (3,0) coordinate (B) -- (4,1.5) coordinate (C) -- (1,1.5) coordinate (D) -- cycle;\n  \\draw[thick] (A) -- ++(0,3) coordinate (A1);\n  \\draw[thick] (B) -- ++(0,3) coordinate (B1);\n  \\draw[thick] (C) -- ++(0,3) coordinate (C1);\n  \\draw[thick] (D) -- ++(0,3) coordinate (D1);\n  \\draw[thick] (A1) -- (B1) -- (C1) -- (D1) -- cycle;\n  \\draw[dashed] (A) -- (D); \\draw[dashed] (D) -- (D1); \\draw[dashed] (C) -- (D);\n\\end{tikzpicture}\n', tooltip: 'Hình hộp 3D nét đứt' },
+                ]
+            },
+            {
+                id: 'text',
+                name: 'Văn bản',
+                icon: 'ph-text-t',
+                buttons: [
+                    { label: 'Tiêu đề 2 cột', tex: '\\begin{twocolumns}\n\\column\n*Bên trái\n\\column\nBên phải\n\\end{twocolumns}\n', tooltip: 'Tiêu đề 2 cột (Trái / Phải)' },
+                    { label: 'Tiêu đề Phần', tex: '\\partheading{*}\n', tooltip: 'Tiêu đề Phần lớn (VD: PHẦN I...)' },
+                    { label: 'Mã Đề', tex: '\\examcode{*}\n', tooltip: 'Khung mã đề thi' },
+                    { label: 'Đáp án A,B,C,D', tex: '\\begin{choices}\n  \\item *\n  \\item \n  \\item \n  \\item \n\\end{choices}\n', tooltip: 'Khối trắc nghiệm ngang chuẩn 2025' },
+                    { label: 'Ô trả lời ngắn', tex: '\\shortanswer\n', tooltip: 'Hộp 4 ô vuông điền kết quả trả lời ngắn' },
+                    { label: 'Khung ảnh rỗng', tex: '\\imageplaceholder{*}\n', tooltip: 'Chèn khung trống mô phỏng Hình vẽ/Đồ thị' },
+                    { label: 'Trắc nghiệm (Bo tròn)', tex: '\\begin{mcq}\n  \\item *\n  \\item \n  \\item \n  \\item \n\\end{mcq}\n', tooltip: 'Khối trắc nghiệm (Bo tròn, thẳng hàng)' },
+                    { label: 'Kẻ n dòng', tex: '\\answerlines{*}\n', tooltip: 'Chèn số dòng kẻ đứt nét cụ thể (VD: 5)' },
+                    { label: 'Kẻ 2 cột', tex: '\\answertwocols{*}\n', tooltip: 'Chèn dòng kẻ đứt nét chia làm 2 cột (VD: 5 dòng)' },
+                    { label: 'Kẻ kín trang', tex: '\\fillpage\n', tooltip: 'Chèn dòng kẻ đứt nét kín 1 trang giấy' },
+                    { label: 'Khung Điểm', tex: '\\gradingbox\n', tooltip: 'Chèn khung Điểm và Lời phê giáo viên' },
+                    { label: '<b>B</b>', tex: '\\textbf{*}', tooltip: 'In đậm (Ctrl+B)' },
+                    { label: '<i>I</i>', tex: '\\textit{*}', tooltip: 'In nghiêng (Ctrl+I)' },
+                    { label: '<u>U</u>', tex: '\\underline{*}', tooltip: 'Gạch chân' },
+                    { label: '<span class="text-violet-600 font-bold">Đậm Tím</span>', tex: '\\textcolor{violet}{\\textbf{*}}', tooltip: 'In đậm màu tím (Violet)' },
+                    { label: '<span class="text-red-500 font-bold">Đậm Đỏ</span>', tex: '\\textcolor{red}{\\textbf{*}}', tooltip: 'In đậm màu đỏ' },
+                    { label: '<span class="text-blue-500 font-bold">Đậm Xanh</span>', tex: '\\textcolor{blue}{\\textbf{*}}', tooltip: 'In đậm màu xanh' },
+                    { label: 'Xuống dòng', tex: '\\\\ \n', tooltip: 'Xuống dòng (\\\\)' },
+                    { label: 'Căn 2 bên', tex: '\\hfill ', tooltip: 'Đẩy văn bản sang 2 bên (hfill)' },
+                    { label: 'Kẻ ngang', tex: '\\hrulefill \n', tooltip: 'Đường kẻ ngang' },
+                ]
+            },
+            {
+                id: 'operators',
+                name: 'Toán tử',
+                icon: 'ph-plus-minus',
+                buttons: [
+                    { label: '×', tex: '\\times ', tooltip: '\\times' },
+                    { label: '÷', tex: '\\div ', tooltip: '\\div' },
+                    { label: '±', tex: '\\pm ', tooltip: '\\pm' },
+                    { label: '∓', tex: '\\mp ', tooltip: '\\mp' },
+                    { label: '·', tex: '\\cdot ', tooltip: '\\cdot (Dấu chấm nhân)' },
+                    { label: '∗', tex: '\\ast ', tooltip: '\\ast (Sao)' },
+                    { label: '⋆', tex: '\\star ', tooltip: '\\star' },
+                    { label: '∘', tex: '\\circ ', tooltip: '\\circ (Hàm hợp)' },
+                    { label: '⊕', tex: '\\oplus ', tooltip: '\\oplus' },
+                    { label: '⊗', tex: '\\otimes ', tooltip: '\\otimes' },
+                ]
+            },
+            {
+                id: 'relations',
+                name: 'Quan hệ',
+                icon: 'ph-equals',
+                buttons: [
+                    { label: '=', tex: '= ', tooltip: '=' },
+                    { label: '≠', tex: '\\neq ', tooltip: '\\neq' },
+                    { label: '≈', tex: '\\approx ', tooltip: '\\approx' },
+                    { label: '≃', tex: '\\simeq ', tooltip: '\\simeq' },
+                    { label: '≡', tex: '\\equiv ', tooltip: '\\equiv' },
+                    { label: '≅', tex: '\\cong ', tooltip: '\\cong' },
+                    { label: '<', tex: '< ', tooltip: '<' },
+                    { label: '>', tex: '> ', tooltip: '>' },
+                    { label: '≤', tex: '\\leq ', tooltip: '\\leq' },
+                    { label: '≥', tex: '\\geq ', tooltip: '\\geq' },
+                    { label: '≪', tex: '\\ll ', tooltip: '\\ll' },
+                    { label: '≫', tex: '\\gg ', tooltip: '\\gg' },
+                    { label: '∝', tex: '\\propto ', tooltip: '\\propto (Tỉ lệ với)' },
+                    { label: '∼', tex: '\\sim ', tooltip: '\\sim' },
+                ]
+            },
+            {
+                id: 'geometry',
+                name: 'Hình học & Lượng giác',
+                icon: 'ph-triangle',
+                buttons: [
+                    { label: 'Góc', tex: '\\angle * ', tooltip: '\\angle' },
+                    { label: 'Độ', tex: '^{\\circ}', tooltip: '^{\\circ} (Độ)' },
+                    { label: 'Vuông góc', tex: '\\perp ', tooltip: '\\perp' },
+                    { label: 'Song song', tex: '\\parallel ', tooltip: '\\parallel' },
+                    { label: 'Tam giác', tex: '\\triangle ', tooltip: '\\triangle' },
+                    { label: 'Đường tròn', tex: '\\bigcirc ', tooltip: '\\bigcirc' },
+                    { label: 'Cung', tex: '\\stackrel{\\frown}{*AB}', tooltip: '\\stackrel{\\frown}{AB} (Cung AB)' },
+                    { label: 'sin', tex: '\\sin(*) ', tooltip: '\\sin' },
+                    { label: 'cos', tex: '\\cos(*) ', tooltip: '\\cos' },
+                    { label: 'tan', tex: '\\tan(*) ', tooltip: '\\tan' },
+                    { label: 'cot', tex: '\\cot(*) ', tooltip: '\\cot' },
+                    { label: 'arcsin', tex: '\\arcsin(*) ', tooltip: '\\arcsin' },
+                ]
+            },
+            {
+                id: 'sets_logic',
+                name: 'Tập hợp & Logic',
+                icon: 'ph-intersect',
+                buttons: [
+                    { label: '∈', tex: '\\in ', tooltip: '\\in' },
+                    { label: '∉', tex: '\\notin ', tooltip: '\\notin' },
+                    { label: '⊂', tex: '\\subset ', tooltip: '\\subset' },
+                    { label: '⊆', tex: '\\subseteq ', tooltip: '\\subseteq' },
+                    { label: '⊃', tex: '\\supset ', tooltip: '\\supset' },
+                    { label: '⊇', tex: '\\supseteq ', tooltip: '\\supseteq' },
+                    { label: '∪', tex: '\\cup ', tooltip: '\\cup' },
+                    { label: '∩', tex: '\\cap ', tooltip: '\\cap' },
+                    { label: '∖', tex: '\\setminus ', tooltip: '\\setminus (Trừ tập hợp)' },
+                    { label: '∅', tex: '\\emptyset ', tooltip: '\\emptyset' },
+                    { label: '∀', tex: '\\forall ', tooltip: '\\forall' },
+                    { label: '∃', tex: '\\exists ', tooltip: '\\exists' },
+                    { label: '∄', tex: '\\nexists ', tooltip: '\\nexists' },
+                    { label: '∧', tex: '\\land ', tooltip: '\\land (Và)' },
+                    { label: '∨', tex: '\\lor ', tooltip: '\\lor (Hoặc)' },
+                    { label: 'ℝ', tex: '\\mathbb{R}', tooltip: 'Tập số thực' },
+                    { label: 'ℕ', tex: '\\mathbb{N}', tooltip: 'Tập số tự nhiên' },
+                    { label: 'ℤ', tex: '\\mathbb{Z}', tooltip: 'Tập số nguyên' },
+                    { label: 'ℚ', tex: '\\mathbb{Q}', tooltip: 'Tập số hữu tỉ' },
+                    { label: 'ℂ', tex: '\\mathbb{C}', tooltip: 'Tập số phức' },
+                ]
+            },
+            {
+                id: 'calculus',
+                name: 'Giải tích',
+                icon: 'ph-function',
+                buttons: [
+                    { label: 'Tích phân', tex: '\\int_{}^{*\} ', tooltip: '\\int' },
+                    { label: 'T.P Kép', tex: '\\iint_{D} ', tooltip: '\\iint' },
+                    { label: 'T.P Ba', tex: '\\iiint_{V} ', tooltip: '\\iiint' },
+                    { label: 'T.P Vòng', tex: '\\oint_{C} ', tooltip: '\\oint' },
+                    { label: 'Tổng', tex: '\\sum_{i=1}^{n\} *', tooltip: '\\sum' },
+                    { label: 'Tích', tex: '\\prod_{i=1}^{n\} *', tooltip: '\\prod' },
+                    { label: 'Giới hạn', tex: '\\lim_{x \\to *\} ', tooltip: '\\lim' },
+                    { label: 'Đạo hàm', tex: '\\frac{d}{dx} *', tooltip: 'Đạo hàm bậc 1' },
+                    { label: 'Đạo hàm riêng', tex: '\\frac{\\partial *}{\\partial x}', tooltip: 'Đạo hàm riêng' },
+                    { label: 'Nabla', tex: '\\nabla ', tooltip: '\\nabla' },
+                    { label: 'Vô cực', tex: '\\infty ', tooltip: '\\infty' },
+                ]
+            },
+            {
+                id: 'accents',
+                name: 'Ký hiệu phụ',
+                icon: 'ph-magic-wand',
+                buttons: [
+                    { label: 'Mũ (Hat)', tex: '\\hat{*}', tooltip: '\\hat{x}' },
+                    { label: 'Gạch ngang (Bar)', tex: '\\bar{*}', tooltip: '\\bar{x}' },
+                    { label: 'Gạch đầu dài', tex: '\\overline{*}', tooltip: '\\overline{AB}' },
+                    { label: 'Vector', tex: '\\vec{*}', tooltip: '\\vec{v}' },
+                    { label: 'Vector dài', tex: '\\overrightarrow{*}', tooltip: '\\overrightarrow{AB}' },
+                    { label: 'Dấu ngã', tex: '\\tilde{*}', tooltip: '\\tilde{x}' },
+                    { label: 'Chấm (Đạo hàm t)', tex: '\\dot{*}', tooltip: '\\dot{x}' },
+                    { label: '2 Chấm', tex: '\\ddot{*}', tooltip: '\\ddot{x}' },
+                    { label: 'Gạch dưới', tex: '\\underline{*}', tooltip: '\\underline{x}' },
+                ]
+            },
+            {
+                id: 'arrows',
+                name: 'Mũi tên',
+                icon: 'ph-arrow-right',
+                buttons: [
+                    { label: '→', tex: '\\rightarrow ', tooltip: '\\rightarrow' },
+                    { label: '←', tex: '\\leftarrow ', tooltip: '\\leftarrow' },
+                    { label: '↔', tex: '\\leftrightarrow ', tooltip: '\\leftrightarrow' },
+                    { label: '⇒', tex: '\\Rightarrow ', tooltip: '\\Rightarrow (Suy ra)' },
+                    { label: '⇐', tex: '\\Leftarrow ', tooltip: '\\Leftarrow' },
+                    { label: '⇔', tex: '\\Leftrightarrow ', tooltip: '\\Leftrightarrow (Tương đương)' },
+                    { label: '↦', tex: '\\mapsto ', tooltip: '\\mapsto' },
+                    { label: '⟶', tex: '\\longrightarrow ', tooltip: '\\longrightarrow (Mũi tên dài)' },
+                ]
+            },
+            {
+                id: 'greek',
+                name: 'Hy Lạp',
+                icon: 'ph-text-a-underline',
+                buttons: [
+                    { label: 'α', tex: '\\alpha ', tooltip: '\\alpha' },
+                    { label: 'β', tex: '\\beta ', tooltip: '\\beta' },
+                    { label: 'γ', tex: '\\gamma ', tooltip: '\\gamma' },
+                    { label: 'δ', tex: '\\delta ', tooltip: '\\delta' },
+                    { label: 'ε', tex: '\\varepsilon ', tooltip: '\\varepsilon' },
+                    { label: 'θ', tex: '\\theta ', tooltip: '\\theta' },
+                    { label: 'λ', tex: '\\lambda ', tooltip: '\\lambda' },
+                    { label: 'μ', tex: '\\mu ', tooltip: '\\mu' },
+                    { label: 'π', tex: '\\pi ', tooltip: '\\pi' },
+                    { label: 'ρ', tex: '\\rho ', tooltip: '\\rho' },
+                    { label: 'σ', tex: '\\sigma ', tooltip: '\\sigma' },
+                    { label: 'φ', tex: '\\varphi ', tooltip: '\\varphi' },
+                    { label: 'ω', tex: '\\omega ', tooltip: '\\omega' },
+                    { label: 'Δ', tex: '\\Delta ', tooltip: '\\Delta (Chữ hoa)' },
+                    { label: 'Σ', tex: '\\Sigma ', tooltip: '\\Sigma (Chữ hoa)' },
+                    { label: 'Ω', tex: '\\Omega ', tooltip: '\\Omega (Chữ hoa)' },
+                ]
+            },
+            {
+                id: 'matrices',
+                name: 'Ma trận & Hệ',
+                icon: 'ph-grid-nine',
+                buttons: [
+                    { label: 'Hệ PT', tex: '\\begin{cases}\n  * & \\text{khi } x > 0 \\\\\n  & \\text{khi } x \\le 0\n\\end{cases}\n', tooltip: 'Hệ phương trình (cases)' },
+                    { label: 'PT nhiều dòng', tex: '\\begin{aligned}\n  * &= a + b \\\\\n    &= c + d\n\\end{aligned}\n', tooltip: 'Căn chỉnh phương trình nhiều dòng (aligned)' },
+                    { label: 'Ma trận ( )', tex: '\\begin{pmatrix}\n  * &  \\\\\n   &  \n\\end{pmatrix}\n', tooltip: 'Ma trận ngoặc tròn' },
+                    { label: 'Ma trận [ ]', tex: '\\begin{bmatrix}\n  * &  \\\\\n   &  \n\\end{bmatrix}\n', tooltip: 'Ma trận ngoặc vuông' },
+                    { label: 'Định thức', tex: '\\begin{vmatrix}\n  * &  \\\\\n   &  \n\\end{vmatrix}\n', tooltip: 'Định thức / Ma trận ngoặc thẳng' },
+                ]
+            }
+        ];
+
+        // --- 2. INITIALIZATION ---
+        const editor = document.getElementById('editor');
+        const previewContainer = document.getElementById('preview-container');
+        const statusEl = document.getElementById('render-status');
+        let updateTimeout;
+
+        // Xây dựng giao diện thanh công cụ
+        function buildToolbar() {
+            const tabsContainer = document.getElementById('toolbar-tabs');
+            const panelsContainer = document.getElementById('toolbar-panels');
+
+            toolbarConfig.forEach((group, index) => {
+                // 1. Tạo Tab
+                const tabBtn = document.createElement('button');
+                tabBtn.className = `px-4 py-2 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${index === 0 ? 'border-blue-600 text-blue-700 bg-white' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`;
+                tabBtn.innerHTML = `<i class="ph ${group.icon} text-lg"></i> ${group.name}`;
+                tabBtn.onclick = () => switchTab(group.id, tabBtn);
+                tabsContainer.appendChild(tabBtn);
+
+                // 2. Tạo Panel chứa các nút bấm
+                const panel = document.createElement('div');
+                panel.id = `panel-${group.id}`;
+                panel.className = `toolbar-group flex-wrap gap-2 ${index === 0 ? 'active' : ''}`;
+                
+                group.buttons.forEach(btn => {
+                    const button = document.createElement('button');
+                    // Style MathType button
+                    button.className = 'px-3 py-1.5 bg-white border border-slate-300 rounded hover:bg-blue-50 hover:border-blue-300 transition text-slate-800 shadow-sm flex items-center justify-center min-w-[40px] title-tooltip';
+                    button.title = btn.tooltip;
+                    
+                    // SỬA: Chuyển textContent thành innerHTML để hiển thị được màu sắc và định dạng trên nút bấm
+                    button.innerHTML = btn.label; 
+                    
+                    button.onclick = () => insertAtCursor(btn.tex);
+                    panel.appendChild(button);
+                });
+
+                panelsContainer.appendChild(panel);
+            });
+        }
+
+        // Đổi tab trên thanh công cụ
+        function switchTab(groupId, activeTabBtn) {
+            // Reset tabs
+            const tabs = document.getElementById('toolbar-tabs').children;
+            for(let tab of tabs) {
+                tab.className = 'px-4 py-2 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50';
+            }
+            activeTabBtn.className = 'px-4 py-2 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors border-blue-600 text-blue-700 bg-white';
+
+            // Reset panels
+            const panels = document.getElementsByClassName('toolbar-group');
+            for(let panel of panels) {
+                panel.classList.remove('active');
+            }
+            document.getElementById(`panel-${groupId}`).classList.add('active');
+        }
+
+        // --- 3. EDITOR FUNCTIONS ---
+
+        // Hàm thông minh chèn text và đặt con trỏ vào vị trí dấu '*'
+        function insertAtCursor(myValue) {
+            const startPos = editor.selectionStart;
+            const endPos = editor.selectionEnd;
+            const text = editor.value;
+            const selectedText = text.substring(startPos, endPos);
+            
+            // --- THÊM TÍNH NĂNG SMART $: Tự động bọc $ nếu chưa ở trong môi trường toán học ---
+            const textBefore = text.substring(0, startPos);
+            // Loại bỏ các khối toán học đã hoàn chỉnh để xem con trỏ có đang nằm trong khối nào đang gõ dở không
+            let temp = textBefore.replace(/\$\$.*?\$\$/gs, '').replace(/\$.*?\$/gs, '').replace(/\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}/g, '');
+            const isInsideMath = temp.includes('$');
+
+            let finalValue = myValue;
+            
+            // 1. Xử lý nếu người dùng có bôi đen văn bản (Selection)
+            if (selectedText.length > 0) {
+                if (finalValue.includes('*')) {
+                    // Thay thế dấu * bằng đoạn văn bản đang bôi đen
+                    finalValue = finalValue.replace('*', selectedText);
+                }
+                // Nếu nút không có dấu *, văn bản bôi đen sẽ bị ghi đè (hành vi chuẩn của các Editor)
+            }
+
+            // 2. Bọc $ hoặc $$ nếu chưa nằm trong môi trường toán học
+            let isSpecialEnv = finalValue.includes('\\begin{mcq}') || finalValue.includes('\\begin{choices}') || finalValue.includes('\\begin{twocolumns}') || finalValue.includes('\\begin{tikzpicture}');
+            let isBlockMath = finalValue.includes('\\begin{') && !isSpecialEnv;
+            
+            if (!isInsideMath && !isSpecialEnv) {
+                // Không bọc $ nếu là các lệnh cấu trúc đặc biệt không cần $
+                if (isBlockMath) {
+                    finalValue = '$$\n' + finalValue + '\n$$';
+                } else if (!myValue.match(/\\textbf|\\textit|\\underline|\\textcolor|\\hrulefill|\\\\|\\answerlines|\\answertwocols|\\fillpage|\\gradingbox|\\partheading|\\examcode|\\shortanswer|\\imageplaceholder/)) {
+                    finalValue = '$' + finalValue + '$';
+                }
+            }
+
+            // 3. Tính toán vị trí con trỏ sau khi chèn
+            let cursorOffset;
+            if (finalValue.includes('*')) {
+                // Trường hợp KHÔNG bôi đen, tìm đến dấu * và xóa nó đi để đặt con trỏ
+                cursorOffset = finalValue.indexOf('*');
+                finalValue = finalValue.replace('*', '');
+            } else {
+                // Trường hợp CÓ bôi đen văn bản hoặc nút không có dấu *
+                // Chăm chút trải nghiệm: Nếu là phân số \frac{A}{} thì đưa con trỏ lùi lại vào trong {} của mẫu số
+                if (selectedText.length > 0 && myValue.includes('\\frac{*}{}')) {
+                    // Nếu đã bọc $, lùi 2 ký tự (}$), nếu chưa bọc thì lùi 1 ký tự (})
+                    cursorOffset = finalValue.length - (isInsideMath ? 1 : 2); 
+                } else {
+                    // Các công thức khác, đưa con trỏ xuống cuối đoạn vừa chèn để gõ tiếp
+                    cursorOffset = finalValue.length; 
+                }
+            }
+
+            editor.value = text.substring(0, startPos) + finalValue + text.substring(endPos, text.length);
+            
+            // Focus và set lại vị trí con trỏ
+            editor.focus();
+            editor.selectionStart = startPos + cursorOffset;
+            editor.selectionEnd = startPos + cursorOffset;
+
+            // Kích hoạt update render
+            triggerUpdate();
+        }
+
+        // Xóa bảng
+        function clearEditor() {
+            if(confirm("Bạn có chắc chắn muốn xóa toàn bộ khung soạn thảo?")) {
+                editor.value = '';
+                editor.focus();
+                triggerUpdate();
+            }
+        }
+
+        // Copy mã LaTeX
+        function copyLaTeX() {
+            navigator.clipboard.writeText(editor.value).then(() => {
+                showToast("Đã chép mã LaTeX vào bộ nhớ đệm!");
+            }).catch(err => {
+                // Fallback for older browsers / iframe issues
+                const textArea = document.createElement("textarea");
+                textArea.value = editor.value;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast("Đã chép mã LaTeX vào bộ nhớ đệm!");
+                } catch (err) {
+                    console.error('Không thể copy', err);
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        // Hiển thị thông báo (Toast)
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // --- 5. TÍNH NĂNG IN PDF ---
+        function printPDF() {
+            // Lệnh này gọi hộp thoại in mặc định của trình duyệt, 
+            // kết hợp với CSS @media print phía trên sẽ cho ra bản PDF hoàn hảo
+            window.print();
+        }
+
+        // --- 6. CÁC TÍNH NĂNG THÔNG MINH NÂNG CAO (HOTKEYS, AUTO-SAVE, AUTO-CLOSE) ---
+
+        // Hàm chèn mẫu đề thi
+        function loadTemplate(type) {
+            if (!type) return; // Nếu chọn option rỗng thì bỏ qua
+            
+            // Cảnh báo nếu đang có nội dung
+            if (editor.value.trim() !== '') {
+                if (!confirm("Khung soạn thảo đang có nội dung. Bạn có chắc chắn muốn xóa đi và chèn đè mẫu mới lên không?")) {
+                    document.getElementById('template-select').value = ""; // Đặt lại dropdown
+                    return;
+                }
+            }
+
+            let templateCode = "";
+            if (type === 'test_2025') {
+                templateCode = `\\begin{twocolumns}
+\\column
+\\textbf{THPT NGUYỄN HỮU CẢNH}\\\\
+\\textbf{TỔ TOÁN}\\\\
+\\textit{(Đề thi có 4 trang)}
+\\column
+\\textbf{Ôn Kiểm Tra HKII - Đề Số 1}\\\\
+\\textbf{MÔN TOÁN - LỚP 12}\\\\
+\\textit{Thời gian làm bài 90 phút}\\\\
+\\textit{(Đề có 12 câu trắc nghiệm, 4 đúng sai, 6 điền đáp án)}
+\\end{twocolumns}
+
+\\vspace{0.2cm}
+
+\\textbf{Họ và tên thí sinh:} \\dotfill
+
+\\textbf{Số Báo Danh:} \\dotfill \\examcode{Mã đề thi 135}
+
+\\vspace{0.2cm}
+\\hrulefill
+
+\\partheading{PHẦN I. Trắc nghiệm nhiều lựa chọn. (12 câu)}
+
+\\textbf{\\textcolor{blue}{Câu 1.}} Họ tất cả các nguyên hàm của hàm số $f(x) = e^{5x}$ là:
+\\begin{choices}
+  \\item $e^{5x} + C.$
+  \\item $\\frac{1}{6}e^{6x} + C.$
+  \\item $\\frac{1}{5}e^{5x} + C.$
+  \\item $5e^{5x} + C.$
+\\end{choices}
+
+\\textbf{\\textcolor{blue}{Câu 2.}} Trong không gian $Oxyz$, cho đường thẳng $d$ có véc-tơ chỉ phương $\\vec{u} = (1; 1; \\sqrt{2})$ và mặt phẳng $(P)$ có véc-tơ pháp tuyến $\\vec{n} = (0; 0; 1)$. Số đo góc giữa đường thẳng $d$ và mặt phẳng $(P)$ là:
+\\begin{choices}
+  \\item $30^{\\circ}.$
+  \\item $0^{\\circ}.$
+  \\item $90^{\\circ}.$
+  \\item $45^{\\circ}.$
+\\end{choices}
+
+\\textbf{\\textcolor{blue}{Câu 3.}} Hai trạm thu phát tín hiệu $A$ và $B$ hoạt động độc lập với nhau. Xác suất để trạm $A$ và trạm $B$ phát tín hiệu thành công lần lượt là $0.4$ và $0.5$. Tính xác suất để cả hai trạm cùng phát tín hiệu thành công.
+\\begin{choices}
+  \\item $0.30.$
+  \\item $0.20.$
+  \\item $0.70.$
+  \\item $0.90.$
+\\end{choices}
+
+\\textbf{\\textcolor{blue}{Câu 4.}} Cho đồ thị của hàm số $y = f(x)$ như hình vẽ bên dưới. Hỏi hàm số $f(x)$ nghịch biến trên khoảng nào dưới đây?
+\\begin{tikzpicture}[scale=0.8]
+  \\draw[->] (-2,0) -- (5,0) node[right] {$x$};
+  \\draw[->] (0,-2) -- (0,4) node[above] {$y$};
+  \\draw[thick, blue] (-1,-1) .. controls (0,4) and (2,4) .. (4,-1);
+  \\draw[dashed] (1.5,0) -- (1.5,2.9);
+  \\node[below left] at (0,0) {$O$};
+  \\node[below] at (1.5,0) {$x_0$};
+\\end{tikzpicture}
+\\begin{choices}
+  \\item $(-5; +\\infty).$
+  \\item $(-1; 4).$
+  \\item $(4; +\\infty).$
+  \\item $(-\\infty; 4).$
+\\end{choices}
+
+\\partheading{PHẦN II. Trắc nghiệm đúng sai. (4 câu)}
+
+\\textbf{\\textcolor{blue}{Câu 1.}} Trong không gian $Oxyz$, kiến trúc sư dựng một khối vòm trang trí nằm giới hạn giữa hai mặt phẳng $x = -1$ và $x = 1$. Thiết diện của khối vòm cắt bởi mặt phẳng vuông góc với trục $Ox$ tại điểm có hoành độ $x$ $(-1 \\le x \\le 1)$ là một tam giác vuông cân có cạnh huyền bằng $\\sqrt{1 - x^2}$. Xét các tính chất của khối vòm này:
+
+a) Cạnh góc vuông của thiết diện tại mặt cắt $x$ có độ dài là $\\frac{\\sqrt{1-x^2}}{\\sqrt{2}}$.
+
+b) Hàm biểu diễn diện tích của thiết diện là $S(x) = \\frac{1 - x^2}{2}$.
+
+c) Thể tích $V$ của khối vòm được tính bởi công thức $V = \\pi \\int_{-1}^{1} S(x) dx$.
+
+d) Thể tích chính xác của toàn bộ khối vòm bằng $\\frac{1}{3}$ (đvtt).
+
+\\partheading{PHẦN III. Trả lời ngắn. (6 câu)}
+
+\\textbf{\\textcolor{blue}{Câu 1.}} Trong phân tích không gian $Oxyz$, mặt phẳng cách ly $(P): x + 2y - 2z + 15 = 0$ dùng để chắn bảo vệ một lõi năng lượng dạng mặt cầu $(S): (x - 1)^2 + (y + 1)^2 + (z - 2)^2 = 4$. Biết mặt phẳng và mặt cầu không chạm nhau. Để đánh giá mức độ an toàn, hãy tính khoảng cách ngắn nhất từ lớp vỏ mặt cầu $(S)$ đến lớp cách ly $(P)$.
+\\shortanswer
+
+\\textbf{\\textcolor{blue}{Câu 2.}} Tại một gian hàng xổ số bốc thăm, hộp kín chứa 5 quả cầu đỏ và 3 quả cầu xanh. Một người chơi được phép rút ngẫu nhiên, không hoàn lại lần lượt 2 quả cầu. Giả sử hệ thống thông báo rằng quả cầu đầu tiên rút ra là màu đỏ. Tính xác suất để quả cầu thứ hai rút ra cũng mang màu đỏ. Viết kết quả dưới dạng phân số tối giản $\\frac{a}{b}$. Tính $a + b$.
+\\shortanswer`;
+            } else if (type === 'test45') {
+                templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ KIỂM TRA 1 TIẾT (45 PHÚT)}\\\\\n\\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\\n\\hrulefill\n\n\\textbf{Câu 1 (3.0 điểm):} Giải các phương trình và hệ phương trình sau:\n\n\\begin{aligned}\n  &a)\\; \\sqrt{x^2 - 4x + 3} = x - 2 \\\\\n  &b)\\; \\begin{cases} 2x + y = 5 \\\\ x - 3y = -1 \\end{cases}\n\\end{aligned}\n\n\\textbf{Câu 2 (3.0 điểm):} Cho hàm số $y = x^2 - 4x + 3$ (P).\n\na) Lập bảng biến thiên và vẽ đồ thị (P).\n\nb) Tìm $m$ để đường thẳng $d: y = x + m$ cắt (P) tại hai điểm phân biệt.\n\n\\textbf{Câu 3 (3.0 điểm):} Trong mặt phẳng tọa độ $Oxy$, cho tam giác $ABC$ có $A(1; 2)$, $B(-1; 1)$ và $C(3; -1)$.\n\na) Viết phương trình tổng quát của đường cao $AH$.\n\nb) Tính diện tích tam giác $ABC$.\n\n\\textbf{Câu 4 (1.0 điểm):} Tìm giá trị lớn nhất, giá trị nhỏ nhất của hàm số $f(x) = \\sin^4 x + \\cos^4 x$.`;
+            } else if (type === 'test90') {
+                templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ THI HỌC KÌ (90 PHÚT)}\\\\
+\\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\
+\\hrulefill
+
+\\textbf{PHẦN I. TRẮC NGHIỆM (5.0 điểm)}
+\\textit{Học sinh chọn một đáp án đúng nhất cho mỗi câu hỏi.}
+
+\\textbf{Câu 1:} Tập xác định của hàm số $y = \\tan x$ là:
+\\begin{mcq}
+  \\item $\\mathbb{R} \\setminus \\left\\{ \\frac{\\pi}{2} + k\\pi, k \\in \\mathbb{Z} \\right\\}$
+  \\item $\\mathbb{R} \\setminus \\left\\{ k\\pi, k \\in \\mathbb{Z} \\right\\}$
+  \\item $\\mathbb{R}$
+  \\item $[-1; 1]$
+\\end{mcq}
+
+\\textbf{Câu 2:} Phương trình $\\sin x = \\frac{1}{2}$ có các nghiệm là:
+\\begin{mcq}
+  \\item $x = \\frac{\\pi}{6} + k2\\pi$
+  \\item $x = \\pm\\frac{\\pi}{6} + k2\\pi$
+  \\item $\\left[ \\begin{aligned} x &= \\frac{\\pi}{6} + k2\\pi \\\\ x &= \\frac{5\\pi}{6} + k2\\pi \\end{aligned} \\right.$
+  \\item $x = \\frac{5\\pi}{6} + k2\\pi$
+\\end{mcq}
+
+\\vspace{0.5cm}
+
+\\textbf{PHẦN II. TỰ LUẬN (5.0 điểm)}
+
+\\textbf{Bài 1 (1.5 điểm):} Giải các phương trình lượng giác sau:
+
+a) $\\cos\\left(2x - \\frac{\\pi}{3}\\right) = \\frac{\\sqrt{3}}{2}$
+
+b) $\\sin^2 x - 3\\sin x + 2 = 0$
+
+\\textbf{Bài 2 (1.5 điểm):} Đội thanh niên tình nguyện của trường có 15 học sinh gồm 4 HS khối 12, 5 HS khối 11 và 6 HS khối 10. Chọn ngẫu nhiên 4 học sinh đi làm nhiệm vụ. Tính xác suất để 4 học sinh được chọn thuộc không quá hai khối.
+
+\\textbf{Bài 3 (2.0 điểm):} Cho hình chóp $S.ABCD$ có đáy $ABCD$ là hình bình hành. Gọi $M, N$ lần lượt là trung điểm của $SB, SD$; $P$ là điểm trên cạnh $SC$ sao cho $SP = 2PC$.
+
+a) Tìm giao tuyến của hai mặt phẳng $(SAC)$ và $(SBD)$.
+
+b) Tìm giao điểm của đường thẳng $AP$ và mặt phẳng $(BMN)$.`;
+            } else if (type === 'test_grading') {
+                templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ KIỂM TRA 1 TIẾT (45 PHÚT)}\\\\
+\\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\
+\\hrulefill
+
+\\textbf{Họ và tên:} \\dotfill \\textbf{Lớp:} \\dotfill
+
+\\gradingbox
+
+\\vspace{0.5cm}
+
+\\hfill \\textbf{ĐỀ BÀI} \\hfill
+
+\\textbf{Câu 1 (4.0 điểm):} Giải phương trình sau:
+$$ \\sqrt{2x^2 - 3x + 1} = x - 1 $$
+\\answerlines{5}
+
+\\textbf{Câu 2 (6.0 điểm):} Cho tam giác ABC có $A(1; 1), B(2; 4), C(10; -2)$.
+
+a) Tính tích vô hướng $\\vec{AB} \\cdot \\vec{AC}$ và suy ra tam giác ABC vuông tại A.
+\\answertwocols{4}
+
+b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp tam giác ABC.
+\\answertwocols{5}`;
+            } else if (type === 'test_rubric') {
+                templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ KIỂM TRA THƯỜNG XUYÊN}\\\\
+\\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\
+\\hrulefill
+
+\\textbf{Họ và tên học sinh:} \\dotfill \\textbf{Lớp:} \\dotfill
+
+\\vspace{0.5cm}
+
+\\hfill \\textbf{ĐỀ BÀI} \\hfill
+
+\\textbf{Câu 1 (4.0 điểm):} Giải phương trình sau:
+$$ \\sqrt{2x^2 - 3x + 1} = x - 1 $$
+\\textbf{Bài làm:}
+\\answerlines{5}
+
+\\textbf{Câu 2 (6.0 điểm):} Cho tam giác ABC có $A(1; 1), B(2; 4), C(10; -2)$.
+
+a) Tính tích vô hướng $\\vec{AB} \\cdot \\vec{AC}$ và suy ra tam giác ABC vuông tại A.
+\\answerlines{4}
+
+b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp tam giác ABC.
+\\answerlines{5}
+
+\\newpage
+
+\\hfill \\textbf{ĐÁP ÁN VÀ THANG ĐIỂM CHẤM} \\hfill
+\\hrulefill
+
+\\textbf{Câu 1 (4.0 điểm):}
+\\begin{rubric}
+  \\item Điều kiện: $x - 1 \\ge 0 \\Leftrightarrow x \\ge 1$ | 1.0
+  \\item Bình phương 2 vế: $2x^2 - 3x + 1 = (x - 1)^2$ | 1.0
+  \\item $\\Leftrightarrow 2x^2 - 3x + 1 = x^2 - 2x + 1 \\Leftrightarrow x^2 - x = 0$ | 1.0
+  \\item Giải ra $x = 0$ (loại), $x = 1$ (nhận). Kết luận nghiệm. | 1.0
+\\end{rubric}
+
+\\textbf{Câu 2 (6.0 điểm):}
+
+\\textbf{a) (3.0 điểm)}
+\\begin{rubric}
+  \\item $\\vec{AB} = (1; 3)$, $\\vec{AC} = (9; -3)$ | 1.0
+  \\item $\\vec{AB} \\cdot \\vec{AC} = 1 \\cdot 9 + 3 \\cdot (-3) = 9 - 9 = 0$ | 1.0
+  \\item Suy ra $\\vec{AB} \\perp \\vec{AC} \\Rightarrow \\triangle ABC$ vuông tại A. | 1.0
+\\end{rubric}
+
+\\textbf{b) (3.0 điểm)}
+\\begin{rubric}
+  \\item Tâm I là trung điểm cạnh huyền BC | 1.0
+  \\item $x_I = \\frac{2+10}{2} = 6$, $y_I = \\frac{4-2}{2} = 1 \\Rightarrow I(6; 1)$ | 1.0
+  \\item $R = \\frac{BC}{2} = \\frac{\\sqrt{8^2 + (-6)^2}}{2} = 5$ | 1.0
+\\end{rubric}`;
+            }
+
+            editor.value = templateCode;
+            document.getElementById('template-select').value = ""; // Đặt lại dropdown về mặc định
+            editor.focus();
+            triggerUpdate();
+            showToast("Đã chèn mẫu đề thi thành công!");
+        }
+
+        // Tải xuống file .tex
+        function downloadTex() {
+            const content = editor.value;
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'tai-lieu-toan.tex';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("Đã tải xuống file .tex!");
+        }
+
+        // Lưu vào LocalStorage
+        function saveToStorage() {
+            localStorage.setItem('latex_saved_code', editor.value);
+        }
+
+        // Khôi phục từ LocalStorage
+        function loadFromStorage() {
+            const saved = localStorage.getItem('latex_saved_code');
+            if (saved) {
+                editor.value = saved;
+            }
+        }
+
+        // Tự động đóng ngoặc & Phím tắt
+        editor.addEventListener('keydown', function(e) {
+            const startPos = this.selectionStart;
+            const endPos = this.selectionEnd;
+            const val = this.value;
+
+            // 1. Phím tắt siêu tốc (Ctrl + ...)
+            if (e.ctrlKey) {
+                let shortcutTex = '';
+                if (e.key === 'f' || e.key === 'F') { // Ctrl+F: Phân số
+                    e.preventDefault();
+                    shortcutTex = '\\frac{*}{}';
+                } else if (e.key === 'q' || e.key === 'Q') { // Ctrl+Q: Căn
+                    e.preventDefault();
+                    shortcutTex = '\\sqrt{*}';
+                } else if (e.key === 'm' || e.key === 'M') { // Ctrl+M: Inline Math
+                    e.preventDefault();
+                    shortcutTex = '$ * $';
+                } else if (e.key === 'e' || e.key === 'E') { // Ctrl+E: Display Math
+                    e.preventDefault();
+                    shortcutTex = '$$\n*\n$$';
+                } else if (e.key === 'b' || e.key === 'B') { // Ctrl+B: In đậm
+                    e.preventDefault();
+                    shortcutTex = '\\textbf{*}';
+                } else if (e.key === 'i' || e.key === 'I') { // Ctrl+I: In nghiêng
+                    e.preventDefault();
+                    shortcutTex = '\\textit{*}';
+                }
+                
+                if (shortcutTex) {
+                    insertAtCursor(shortcutTex);
+                    return; // Dừng xử lý tiếp
+                }
+            }
+
+            // 2. Tự động đóng ngoặc
+            const pairs = { '{': '}', '[': ']', '(': ')' };
+            if (pairs[e.key]) {
+                e.preventDefault();
+                const closing = pairs[e.key];
+                
+                // Nếu đang bôi đen, bọc ngoặc quanh đoạn bôi đen
+                if (startPos !== endPos) {
+                    const selectedText = val.substring(startPos, endPos);
+                    this.value = val.substring(0, startPos) + e.key + selectedText + closing + val.substring(endPos);
+                    this.selectionStart = startPos + 1;
+                    this.selectionEnd = endPos + 1;
+                } else {
+                    // Chèn cặp ngoặc và đặt con trỏ vào giữa
+                    this.value = val.substring(0, startPos) + e.key + closing + val.substring(endPos);
+                    this.selectionStart = this.selectionEnd = startPos + 1;
+                }
+                triggerUpdate();
+            }
+            
+            // 3. Xử lý xóa Backspace thông minh (xóa luôn ngoặc đóng nếu xóa ngoặc mở)
+            if (e.key === 'Backspace' && startPos === endPos && startPos > 0) {
+                const charBefore = val.substring(startPos - 1, startPos);
+                const charAfter = val.substring(startPos, startPos + 1);
+                
+                if ((charBefore === '{' && charAfter === '}') ||
+                    (charBefore === '[' && charAfter === ']') ||
+                    (charBefore === '(' && charAfter === ')')) {
+                    e.preventDefault();
+                    this.value = val.substring(0, startPos - 1) + val.substring(startPos + 1);
+                    this.selectionStart = this.selectionEnd = startPos - 1;
+                    triggerUpdate();
+                }
+            }
+        });
+
+        // --- 4. MATHJAX RENDERING LOGIC ---
+
+        function updatePreview() {
+            statusEl.textContent = 'Đang render...';
+            statusEl.className = 'text-xs text-amber-500 font-medium animate-pulse';
+
+            let rawText = editor.value;
+            
+            // --- CÁC HÀM CẤU TRÚC ĐẶC BIỆT MỚI ---
+
+            // Tiêu đề 2 cột
+            rawText = rawText.replace(/\\begin\{twocolumns\}([\s\S]*?)\\end\{twocolumns\}/g, function(match, content) {
+                let cols = content.split(/\\column/).filter(i => i.trim() !== '');
+                let left = cols[0] ? cols[0].trim() : '';
+                let right = cols[1] ? cols[1].trim() : '';
+                // Xử lý các dòng xuống dòng bên trong cột
+                left = left.replace(/\\\\(?:\s*\n)?/g, '<br>');
+                right = right.replace(/\\\\(?:\s*\n)?/g, '<br>');
+                return `<div class="grid grid-cols-2 w-full gap-4 mb-2 clear-both"><div class="text-center">${left}</div><div class="text-center">${right}</div></div>`;
+            });
+
+            // Tiêu đề phần (PHẦN I, PHẦN II...)
+            rawText = rawText.replace(/\\partheading\{([^{}]+)\}/g, `<h3 class="text-[14pt] font-bold uppercase mt-6 mb-3 avoid-break clear-both">$1</h3>`);
+
+            // Khung mã đề thi
+            rawText = rawText.replace(/\\examcode\{([^{}]+)\}/g, `<span class="border-[1.5px] border-slate-900 font-bold px-3 py-1 float-right mt-[-15px] print:border-black">$1</span>`);
+
+            // Khối trắc nghiệm ngang (Không bo tròn, mẫu 2025)
+            rawText = rawText.replace(/\\begin\{choices\}([\s\S]*?)\\end\{choices\}/g, function(match, content) {
+                let items = content.split(/\\item/).filter(i => i.trim() !== '');
+                let labels = ['A.', 'B.', 'C.', 'D.'];
+                let gridHtml = '<div class="grid grid-cols-4 gap-y-2 gap-x-4 my-2 w-full avoid-break clear-both">';
+                for(let i = 0; i < items.length; i++) {
+                    let label = labels[i] || '';
+                    let itemContent = items[i].trim();
+                    gridHtml += `<div class="flex items-start gap-1"><span class="font-bold">${label}</span><div class="flex-1">${itemContent}</div></div>`;
+                }
+                gridHtml += '</div>';
+                return gridHtml;
+            });
+
+            // Ô trả lời ngắn (4 ô vuông)
+            rawText = rawText.replace(/\\shortanswer/g, `<div class="flex justify-end items-center mt-2 mb-4 avoid-break clear-both"><span class="mr-3 font-bold">KQ:</span><div class="flex"><div class="w-[30px] h-[36px] border-[1.5px] border-slate-800 print:border-black"></div><div class="w-[30px] h-[36px] border-[1.5px] border-slate-800 border-l-0 print:border-black"></div><div class="w-[30px] h-[36px] border-[1.5px] border-slate-800 border-l-0 print:border-black"></div><div class="w-[30px] h-[36px] border-[1.5px] border-slate-800 border-l-0 print:border-black"></div></div></div>`);
+
+            // Khung ảnh rỗng
+            rawText = rawText.replace(/\\imageplaceholder\{([^{}]+)\}/g, `<div class="w-full flex justify-center my-4 avoid-break clear-both"><div class="border-2 border-dashed border-slate-400 bg-slate-50 w-64 h-48 flex items-center justify-center text-slate-500 text-sm italic print:border-solid print:border-black print:bg-transparent">[Hình ảnh: $1]</div></div>`);
+
+            // --- HÀM MỚI: PHÂN TÍCH KHỐI ĐIỂM VÀ LỜI PHÊ (GRADING BOX) ---
+            rawText = rawText.replace(/\\gradingbox/g, `
+                <table class="w-full border-collapse my-4 text-sm print:text-sm avoid-break clear-both" style="border: 2px solid #1e293b;">
+                    <tr>
+                        <td class="p-2 w-1/4 text-center font-bold" style="border: 1px solid #1e293b;">Điểm</td>
+                        <td class="p-2 text-center font-bold" style="border: 1px solid #1e293b;">Lời phê của giáo viên</td>
+                    </tr>
+                    <tr>
+                        <td class="h-28" style="border: 1px solid #1e293b;"></td>
+                        <td style="border: 1px solid #1e293b;"></td>
+                    </tr>
+                </table>
+            `);
+
+            // --- HÀM PHÂN TÍCH KHỐI TRẮC NGHIỆM (MCQ) ---
+            // Thay thế \begin{mcq} ... \end{mcq} thành CSS Grid trước khi tách Math
+            rawText = rawText.replace(/\\begin\{mcq\}([\s\S]*?)\\end\{mcq\}/g, function(match, content) {
+                // Tách theo \item, bỏ qua phần tử rỗng đầu tiên do khoảng trắng
+                let items = content.split(/\\item/).filter(i => i.trim() !== '');
+                let labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+                // Tạo một grid 2 cột. gap-y-4 tạo khoảng cách trên dưới, gap-x-6 tạo khoảng cách ngang
+                let gridHtml = '<div class="grid grid-cols-2 gap-y-4 gap-x-6 my-4 w-full avoid-break clear-both">';
+                for(let i = 0; i < items.length; i++) {
+                    let label = labels[i] || '*';
+                    let itemContent = items[i].trim();
+                    // Tạo ô đáp án: ép cứng style CSS nội tuyến để bo tròn chuẩn khi in
+                    gridHtml += `<div class="flex items-start gap-3"><span class="flex-shrink-0 inline-flex items-center justify-center w-7 h-7 text-sm font-bold text-slate-800 mt-[2px] leading-none" style="border: 1.5px solid #1e293b; border-radius: 50% !important;">${label}</span><div class="flex-1 text-slate-900">${itemContent}</div></div>`;
+                }
+                gridHtml += '</div>';
+                return gridHtml;
+            });
+
+            // --- HÀM PHÂN TÍCH KHỐI THANG ĐIỂM (RUBRIC) ---
+            rawText = rawText.replace(/\\begin\{rubric\}([\s\S]*?)\\end\{rubric\}/g, function(match, content) {
+                let items = content.split(/\\item/).filter(i => i.trim() !== '');
+                let tableHtml = '<table class="w-full border-collapse my-4 text-sm print:text-sm avoid-break clear-both" style="border: 1px solid #1e293b;">';
+                tableHtml += '<thead><tr class="bg-slate-100 print:bg-slate-50"><th class="p-2 text-left" style="border: 1px solid #1e293b;">Nội dung chấm / Đáp án</th><th class="p-2 w-24 text-center" style="border: 1px solid #1e293b;">Điểm</th></tr></thead><tbody>';
+                for(let i = 0; i < items.length; i++) {
+                    let parts = items[i].split('|');
+                    let detail = parts[0] ? parts[0].trim() : '';
+                    let score = parts[1] ? parts[1].trim() : '';
+                    tableHtml += `<tr class="rubric-row"><td class="p-2" style="border: 1px solid #1e293b;">${detail}</td><td class="p-2 text-center font-bold text-red-600 print:text-black" style="border: 1px solid #1e293b;">${score}</td></tr>`;
+                }
+                tableHtml += '</tbody></table>';
+                return tableHtml;
+            });
+
+            // --- HÀM PHÂN TÍCH VÀ RENDER CÁC LỆNH VĂN BẢN LATEX CHUẨN VÀ TIKZ ---
+            // Tách các khối toán học và khối TikZ ra để không vô tình thay thế mã bên trong chúng
+            const blockRegex = /(\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}|\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g;
+            let parts = rawText.split(blockRegex);
+
+            for (let i = 0; i < parts.length; i++) {
+                // Các phần tử ở vị trí chẵn là văn bản bình thường
+                if (i % 2 === 0) {
+                    let s = parts[i];
+                    
+                    // Hàm xử lý các lệnh định dạng (hỗ trợ lệnh lồng nhau như \textcolor{}{\textbf{}})
+                    const replaceCmd = (text, cmd, openTag, closeTag) => {
+                        const regex = new RegExp(`\\\\${cmd}\\{((?:[^{}]|\\{[^{}]*\\})*)\\}`, 'g');
+                        let newText = text.replace(regex, `${openTag}$1${closeTag}`);
+                        while(newText !== text) {
+                            text = newText;
+                            newText = text.replace(regex, `${openTag}$1${closeTag}`);
+                        }
+                        return text;
+                    };
+
+                    s = replaceCmd(s, 'textbf', '<b class="font-bold text-slate-900">', '</b>');
+                    s = replaceCmd(s, 'textit', '<i class="italic">', '</i>');
+                    s = replaceCmd(s, 'underline', '<u class="underline underline-offset-2">', '</u>');
+
+                    // Xử lý lệnh màu sắc: \textcolor{color}{text}
+                    const colorRegex = /\\textcolor\{([^{}]+)\}\{((?:[^{}]|\\{[^{}]*\\})*)\}/g;
+                    let newS = s.replace(colorRegex, '<span style="color: $1;">$2</span>');
+                    while(newS !== s) { s = newS; newS = s.replace(colorRegex, '<span style="color: $1;">$2</span>'); }
+                    
+                    // Xử lý các lệnh cấu trúc đặc biệt mới thêm (Dòng kẻ, dấu chấm, ngắt trang, kẻ kín trang)
+                    s = s.replace(/\\dotfill/g, '<span class="inline-block w-48 mx-2 relative -top-1 clear-both" style="border-bottom: 1.5px dotted #64748b;"></span>');
+                    
+                    // Hàm render n dòng kẻ
+                    s = s.replace(/\\answerlines\{(\d+)\}/g, (match, n) => {
+                        let num = parseInt(n);
+                        let linesHtml = '';
+                        for(let k=0; k<num; k++) {
+                            linesHtml += '<div class="mt-8 w-full h-2" style="border-bottom: 1px dashed #94a3b8;"></div>';
+                        }
+                        return `<div class="my-4 mb-8 avoid-break clear-both">${linesHtml}</div>`;
+                    });
+
+                    // HÀM MỚI: Render n dòng kẻ chia làm 2 cột
+                    s = s.replace(/\\answertwocols\{(\d+)\}/g, (match, n) => {
+                        let num = parseInt(n);
+                        let linesHtml = '';
+                        for(let k=0; k<num; k++) {
+                            linesHtml += '<div class="mt-8 w-full h-2" style="border-bottom: 1px dashed #94a3b8;"></div>';
+                        }
+                        return `<div class="flex w-full my-4 mb-8 avoid-break clear-both">
+                                    <div class="flex-1 pr-6" style="border-right: 1.5px dashed #94a3b8;">
+                                        ${linesHtml}
+                                    </div>
+                                    <div class="flex-1 pl-6">
+                                        ${linesHtml}
+                                    </div>
+                                </div>`;
+                    });
+                    
+                    // Hàm render kẻ kín toàn bộ trang giấy (mô phỏng 34 dòng)
+                    s = s.replace(/\\fillpage/g, () => {
+                        let linesHtml = '';
+                        for(let k=0; k<34; k++) {
+                            linesHtml += '<div class="mt-8 w-full h-2" style="border-bottom: 1px dashed #94a3b8;"></div>';
+                        }
+                        return `<div class="my-4 mb-8 clear-both">${linesHtml}</div>`;
+                    });
+
+                    // Lệnh ngắt trang (Cần có clear-both để không bị vướng thẻ div nổi)
+                    s = s.replace(/\\newpage/g, '<div style="page-break-before: always;" class="w-full border-b-4 border-double border-slate-300 my-8 flex justify-center items-center relative print:border-none print:my-0 clear-both"><span class="bg-white px-2 text-slate-400 text-xs uppercase font-bold absolute print:hidden">Sang trang mới (Tự động cắt khi in)</span></div>');
+
+                    // Xử lý các lệnh cấu trúc đặc biệt
+                    s = s.replace(/\\hrulefill/g, '<div class="my-2 w-full clear-both" style="border-bottom: 2px solid #334155;"></div>');
+                    s = s.replace(/\\vspace\{[^}]+\}/g, '<br><br>');
+
+                    // --- FIX LỖI NHẢY TRANG: Xử lý đoạn văn và hfill chuẩn xác ---
+                    let paragraphs = s.split(/\n\s*\n/); // Bước 1: Tách riêng từng khối đoạn văn
+                    for(let p = 0; p < paragraphs.length; p++) {
+                        let lines = paragraphs[p].split(/\\\\(?:\s*\n)?/); // Bước 2: Tách riêng các dòng (\\) trong đoạn văn
+                        
+                        for(let j = 0; j < lines.length; j++) {
+                            if(lines[j].includes('\\hfill')) {
+                                let pieces = lines[j].split('\\hfill');
+                                // Khởi tạo Flexbox an toàn, không chứa các khối lớn
+                                let html = `<div class="flex w-full items-end pb-1 clear-both">`;
+                                for (let k = 0; k < pieces.length; k++) {
+                                    if (k === 0) {
+                                        html += `<div>${pieces[k].trim()}</div>`;
+                                    } else if (k === pieces.length - 1) {
+                                         html += `<div class="flex-1 text-right">${pieces[k].trim()}</div>`;
+                                    } else {
+                                         html += `<div class="flex-1 text-center">${pieces[k].trim()}</div>`;
+                                    }
+                                }
+                                html += `</div>`;
+                                lines[j] = html;
+                            } else if (j < lines.length - 1) {
+                                lines[j] = lines[j] + '<br>'; // Xuống dòng bình thường
+                            }
+                        }
+                        paragraphs[p] = lines.join('');
+                    }
+                    // Bọc các đoạn văn bằng thẻ <div> thay vì <p> để tránh vỡ layout HTML do lồng thẻ sai
+                    s = paragraphs.join('</div><div class="mb-3">');
+
+                    parts[i] = s;
+                } else {
+                    // Nếu là vị trí lẻ (các khối toán hoặc TikZ đã được tách ra)
+                    
+                    if (parts[i].startsWith('\\begin{tikzpicture}')) {
+                        // SỬA LỖI TIKZ SẬP: Chuẩn hóa khoảng trắng.
+                        // Khi copy/paste từ Word hay Web, các dấu Space thường bị biến thành Non-breaking Space (&nbsp; hay \u00A0).
+                        // Bộ biên dịch TeX cực kỳ ghét ký tự này và sẽ sập (crash) ngay lập tức.
+                        let cleanTikz = parts[i].replace(/\u00A0/g, ' ');
+                        
+                        let tikzPayload = cleanTikz;
+                        
+                        // SỬA LỖI MŨI TÊN (>=stealth): Tự động bọc mã vào khung chuẩn LaTeX và nạp sẵn các thư viện TikZ quyền lực nhất.
+                        if (!cleanTikz.includes('\\begin{document}')) {
+                            tikzPayload = `\\documentclass[margin=2pt]{standalone}\n\\usepackage{tikz}\n\\usetikzlibrary{arrows, arrows.meta, calc, positioning, shapes.geometric, patterns, intersections, decorations.markings}\n\\begin{document}\n${cleanTikz}\n\\end{document}`;
+                        }
+                        
+                        // Chuyển mã TikZ vào thẻ script để TikZJax tự động nhận diện và render.
+                        // Thêm class tex2jax_ignore để khóa MathJax không cho chui vào làm hỏng các ký tự toán học ($x$, $y$) bên trong mã vẽ.
+                        parts[i] = `<div class="flex justify-center my-4 avoid-break clear-both tex2jax_ignore"><script type="text/tikz">${tikzPayload}<\/script></div>`;
+                    }
+                }
+            }
+            
+            // Lắp ráp lại toàn bộ (bao gồm cả khối Toán đã tách ra)
+            let formattedHtml = `<div class="mb-3">${parts.join('')}</div>`;
+            
+            // Dọn dẹp các thẻ div rỗng do tách mảng
+            formattedHtml = formattedHtml.replace(/<div class="mb-3">\s*<\/div>/g, '');
+
+            // Gán vào khung preview
+            previewContainer.innerHTML = formattedHtml;
+
+            // --- FIX LỖI TIKZ KHÔNG RENDER ---
+            // Bức giá trị innerHTML sẽ không kích hoạt MutationObserver của TikZJax nếu thẻ script bị bọc trong các thẻ <div>.
+            // Giải pháp: Tìm tất cả thẻ script TikZ vừa chèn, tạo node mới và thay thế để "đánh thức" trình biên dịch.
+            const tikzScripts = previewContainer.querySelectorAll('script[type="text/tikz"]');
+            tikzScripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                newScript.type = 'text/tikz';
+                newScript.textContent = oldScript.textContent;
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
+
+            // Gọi MathJax typesetting
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([previewContainer]).then(() => {
+                    statusEl.textContent = 'Đã cập nhật';
+                    statusEl.className = 'text-xs text-emerald-600 font-medium';
+                }).catch((err) => {
+                    console.error('MathJax error:', err);
+                    statusEl.textContent = 'Lỗi cú pháp';
+                    statusEl.className = 'text-xs text-red-500 font-medium';
+                });
+            }
+        }
+
+        // Kỹ thuật Debounce để không render liên tục khi đang gõ nhanh
+        // Đã tăng thời gian chờ lên 800ms để giảm giật lag khi render khối đồ họa TikZ nặng
+        function triggerUpdate() {
+            clearTimeout(updateTimeout);
+            statusEl.textContent = 'Đang gõ...';
+            statusEl.className = 'text-xs text-slate-500 font-medium';
+            saveToStorage(); // Tự động lưu mỗi khi có thay đổi
+            updateTimeout = setTimeout(updatePreview, 800); 
+        }
+
+        // Lắng nghe sự kiện gõ phím
+        editor.addEventListener('input', triggerUpdate);
+
+        // Khởi tạo
+        window.onload = () => {
+            buildToolbar();
+            loadFromStorage(); // Khôi phục bài làm nếu có
+            updatePreview(); // Lần render đầu tiên
+        };
+
+    </script>
+</body>
+</html>
