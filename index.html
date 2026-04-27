@@ -368,7 +368,7 @@
                 icon: 'ph-text-t',
                 buttons: [
                     { label: 'Tiêu đề giữa', tex: '\\begin{center}\n\\Large{*}\n\\end{center}\n', tooltip: 'Căn giữa tiêu đề lớn' },
-                    { label: 'Tiêu đề 2 cột', tex: '\\begin{twocolumns}\n\\column\n*Bên trái\n\\column\nBên phải\n\\end{twocolumns}\n', tooltip: 'Tiêu đề 2 cột (Trái / Phải)' },
+                    { label: 'Tiêu đề đề thi', tex: '\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ KIỂM TRA ...}\\\\\n\\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\\n\\hrulefill\n\n', tooltip: 'Tiêu đề bài thi chuẩn (Tiết kiệm giấy)' },
                     { label: 'Tiêu đề Phần', tex: '\\partheading{*}\n', tooltip: 'Tiêu đề Phần lớn (VD: PHẦN I...)' },
                     { label: 'Mã Đề', tex: '\\examcode{*}\n', tooltip: 'Khung mã đề thi' },
                     { label: 'Đáp án A,B,C,D', tex: '\\begin{choices}\n  \\item *\n  \\item \n  \\item \n  \\item \n\\end{choices}\n', tooltip: 'Khối trắc nghiệm ngang chuẩn 2025' },
@@ -788,21 +788,14 @@
             // Chuyển đổi các định dạng đặc biệt sang HTML mà Word có thể đọc (dùng bảng table)
             // 1. Căn giữa
             rawText = rawText.replace(/\\begin\{center\}([\s\S]*?)\\end\{center\}/g, `<div align="center">$1</div>`);
-            // 2. Tiêu đề 2 cột
-            rawText = rawText.replace(/\\begin\{twocolumns\}([\s\S]*?)\\end\{twocolumns\}/g, function(match, content) {
-                let cols = content.split(/\\column/).filter(i => i.trim() !== '');
-                let left = cols[0] ? cols[0].trim().replace(/\\\\(?:\s*\n)?/g, '<br>') : '';
-                let right = cols[1] ? cols[1].trim().replace(/\\\\(?:\s*\n)?/g, '<br>') : '';
-                return `<table width="100%" cellpadding="0" cellspacing="0"><tr><td width="50%" valign="top" align="center">${left}</td><td width="50%" valign="top" align="center">${right}</td></tr></table>`;
-            });
-
-            // 3. Tiêu đề phần
+            
+            // 2. Tiêu đề phần
             rawText = rawText.replace(/\\partheading\{([^{}]+)\}/g, `<br><b><span style="font-size:14pt; text-transform:uppercase;">$1</span></b><br>`);
 
-            // 4. Khung mã đề thi
-            rawText = rawText.replace(/\\examcode\{([^{}]+)\}/g, `<div style="text-align:right; font-weight:bold;">[ $1 ]</div>`);
+            // 3. Khung mã đề thi
+            rawText = rawText.replace(/\\examcode\{([^{}]+)\}/g, `<span style="border: 1px solid black; padding: 2px 6px; font-weight: bold;">$1</span>`);
 
-            // 5. Khối trắc nghiệm từ lệnh chuẩn hóa
+            // 4. Khối trắc nghiệm ngang 4 cột (từ lệnh gốc LaTeX)
             rawText = rawText.replace(/\\begin\{choices\}([\s\S]*?)\\end\{choices\}/g, function(match, content) {
                 let items = content.split(/\\item/).filter(i => i.trim() !== '');
                 let opts = items.slice(0, 4).map(i => i.trim());
@@ -829,7 +822,7 @@
                 return html;
             });
 
-            // 6. Khối trắc nghiệm 2 cột
+            // 5. Khối trắc nghiệm 2 cột
             rawText = rawText.replace(/\\begin\{mcq\}([\s\S]*?)\\end\{mcq\}/g, function(match, content) {
                 let items = content.split(/\\item/).filter(i => i.trim() !== '');
                 let labels = ['A.', 'B.', 'C.', 'D.', 'E.', 'F.'];
@@ -846,11 +839,11 @@
                 return html;
             });
 
-            // 7. Các ký hiệu ngắn
+            // 6. Các ký hiệu ngắn
             rawText = rawText.replace(/\\shortanswer/g, `<div style="text-align:right; margin-top:5px; margin-bottom:10px;"><b>KQ:</b> [____] [____] [____] [____]</div>`);
             rawText = rawText.replace(/\\imageplaceholder\{([^{}]+)\}/g, `<div style="text-align:center; border:1px solid #000; padding:40px; margin:10px 0;">[Hình ảnh: $1]</div>`);
             
-            // 8. Bảng chấm điểm / Rubric
+            // 7. Bảng chấm điểm / Rubric
             rawText = rawText.replace(/\\begin\{rubric\}([\s\S]*?)\\end\{rubric\}/g, function(match, content) {
                 let items = content.split(/\\item/).filter(i => i.trim() !== '');
                 let html = '<table border="1" cellspacing="0" cellpadding="5" width="100%" style="border-collapse:collapse; margin-top:10px; margin-bottom:10px;">';
@@ -1211,26 +1204,12 @@ $$x^2 + y^2 - 4x + 6y - 12 = 0$$
   \\item \\textbf{Câu 10:} Có 2 tiếp tuyến thỏa mãn: $x - 4 = 0$ và $8x - 15y + 13 = 0$. | 1.0
 \\end{rubric}`;
             } else if (type === 'test_2025') {
-                templateCode = `\\begin{twocolumns}
-\\column
-\\textbf{THPT NGUYỄN HỮU CẢNH}\\\\
-\\textbf{TỔ TOÁN}\\\\
-\\textit{(Đề thi có 4 trang)}
-\\column
-\\textbf{Ôn Kiểm Tra HKII - Đề Số 1}\\\\
-\\textbf{MÔN TOÁN - LỚP 12}\\\\
-\\textit{Thời gian làm bài 90 phút}\\\\
-\\textit{(Đề có 12 câu trắc nghiệm, 4 đúng sai, 6 điền đáp án)}
-\\end{twocolumns}
-
-\\vspace{0.2cm}
-
-\\textbf{Họ và tên thí sinh:} \\dotfill
-
-\\textbf{Số Báo Danh:} \\dotfill \\examcode{Mã đề thi 135}
-
-\\vspace{0.2cm}
+                templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ÔN KIỂM TRA HKII - ĐỀ SỐ 1}\\\\
+\\textbf{TỔ TOÁN} \\hfill \\textbf{MÔN TOÁN - LỚP 12}\\\\
+\\textit{(Đề thi có 4 trang)} \\hfill \\textit{Thời gian làm bài: 90 phút}\\\\
 \\hrulefill
+
+\\textbf{Họ và tên thí sinh:} \\dotfill \\textbf{Số Báo Danh:} \\dotfill \\hfill \\examcode{Mã đề 135}
 
 \\partheading{PHẦN I. Trắc nghiệm nhiều lựa chọn. (12 câu)}
 
@@ -1294,13 +1273,40 @@ d) Thể tích chính xác của toàn bộ khối vòm bằng $\\frac{1}{3}$ (�
 \\textbf{\\textcolor{blue}{Câu 2.}} Tại một gian hàng xổ số bốc thăm, hộp kín chứa 5 quả cầu đỏ và 3 quả cầu xanh. Một người chơi được phép rút ngẫu nhiên, không hoàn lại lần lượt 2 quả cầu. Giả sử hệ thống thông báo rằng quả cầu đầu tiên rút ra là màu đỏ. Tính xác suất để quả cầu thứ hai rút ra cũng mang màu đỏ. Viết kết quả dưới dạng phân số tối giản $\\frac{a}{b}$. Tính $a + b$.
 \\shortanswer`;
             } else if (type === 'test45') {
-                templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ KIỂM TRA 1 TIẾT (45 PHÚT)}\\\\\n\\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\\n\\hrulefill\n\n\\textbf{Câu 1 (3.0 điểm):} Giải các phương trình và hệ phương trình sau:\n\n$$\\begin{aligned}\n  &a)\\; \\sqrt{x^2 - 4x + 3} = x - 2 \\\\\n  &b)\\; \\begin{cases} 2x + y = 5 \\\\ x - 3y = -1 \\end{cases}\n\\end{aligned}$$\n\n\\textbf{Câu 2 (3.0 điểm):} Cho hàm số $y = x^2 - 4x + 3$ (P).\n\na) Lập bảng biến thiên và vẽ đồ thị (P).\n\nb) Tìm $m$ để đường thẳng $d: y = x + m$ cắt (P) tại hai điểm phân biệt.\n\n\\textbf{Câu 3 (3.0 điểm):} Trong mặt phẳng tọa độ $Oxy$, cho tam giác $ABC$ có $A(1; 2)$, $B(-1; 1)$ và $C(3; -1)$.\n\na) Viết phương trình tổng quát của đường cao $AH$.\n\nb) Tính diện tích tam giác $ABC$.\n\n\\textbf{Câu 4 (1.0 điểm):} Tìm giá trị lớn nhất, giá trị nhỏ nhất của hàm số $f(x) = \\sin^4 x + \\cos^4 x$.`;
+                templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ KIỂM TRA 1 TIẾT (45 PHÚT)}\\\\
+\\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\
+\\hrulefill
+
+\\textbf{Họ và tên học sinh:} \\dotfill \\textbf{Lớp:} \\dotfill
+
+\\textbf{Câu 1 (3.0 điểm):} Giải các phương trình và hệ phương trình sau:
+
+$$\\begin{aligned}
+  &a)\\; \\sqrt{x^2 - 4x + 3} = x - 2 \\\\
+  &b)\\; \\begin{cases} 2x + y = 5 \\\\ x - 3y = -1 \\end{cases}
+\\end{aligned}$$
+
+\\textbf{Câu 2 (3.0 điểm):} Cho hàm số $y = x^2 - 4x + 3$ (P).
+
+a) Lập bảng biến thiên và vẽ đồ thị (P).
+
+b) Tìm $m$ để đường thẳng $d: y = x + m$ cắt (P) tại hai điểm phân biệt.
+
+\\textbf{Câu 3 (3.0 điểm):} Trong mặt phẳng tọa độ $Oxy$, cho tam giác $ABC$ có $A(1; 2)$, $B(-1; 1)$ và $C(3; -1)$.
+
+a) Viết phương trình tổng quát của đường cao $AH$.
+
+b) Tính diện tích tam giác $ABC$.
+
+\\textbf{Câu 4 (1.0 điểm):} Tìm giá trị lớn nhất, giá trị nhỏ nhất của hàm số $f(x) = \\sin^4 x + \\cos^4 x$.`;
             } else if (type === 'test90') {
                 templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ĐỀ THI HỌC KÌ (90 PHÚT)}\\\\
 \\textbf{TỔ TOÁN} \\hfill \\textbf{Môn: Toán - Lớp ...}\\\\
 \\hrulefill
 
-\\textbf{PHẦN I. TRẮC NGHIỆM (5.0 điểm)}
+\\textbf{Họ và tên học sinh:} \\dotfill \\textbf{Lớp:} \\dotfill
+
+\\partheading{PHẦN I. TRẮC NGHIỆM (5.0 điểm)}
 \\textit{Học sinh chọn một đáp án đúng nhất cho mỗi câu hỏi.}
 
 \\textbf{Câu 1:} Tập xác định của hàm số $y = \\tan x$ là:
@@ -1345,9 +1351,9 @@ b) Tìm giao điểm của đường thẳng $AP$ và mặt phẳng $(BMN)$.`;
 
 \\gradingbox
 
-\\vspace{0.5cm}
-
-\\hfill \\textbf{ĐỀ BÀI} \\hfill
+\\begin{center}
+\\textbf{ĐỀ BÀI}
+\\end{center}
 
 \\textbf{Câu 1 (4.0 điểm):} Giải phương trình sau:
 $$ \\sqrt{2x^2 - 3x + 1} = x - 1 $$
@@ -1367,9 +1373,9 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
 
 \\textbf{Họ và tên học sinh:} \\dotfill \\textbf{Lớp:} \\dotfill
 
-\\vspace{0.5cm}
-
-\\hfill \\textbf{ĐỀ BÀI} \\hfill
+\\begin{center}
+\\textbf{ĐỀ BÀI}
+\\end{center}
 
 \\textbf{Câu 1 (4.0 điểm):} Giải phương trình sau:
 $$ \\sqrt{2x^2 - 3x + 1} = x - 1 $$
@@ -1386,7 +1392,9 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
 
 \\newpage
 
-\\hfill \\textbf{ĐÁP ÁN VÀ THANG ĐIỂM CHẤM} \\hfill
+\\begin{center}
+\\textbf{\\Large{ĐÁP ÁN VÀ THANG ĐIỂM CHẤM}}
+\\end{center}
 \\hrulefill
 
 \\textbf{Câu 1 (4.0 điểm):}
@@ -1583,7 +1591,7 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
             rawText = rawText.replace(/\\partheading\{([^{}]+)\}/g, `<h3 class="text-[14pt] font-bold uppercase mt-6 mb-3 avoid-break clear-both">$1</h3>`);
 
             // Khung mã đề thi
-            rawText = rawText.replace(/\\examcode\{([^{}]+)\}/g, `<span class="border-[1.5px] border-slate-900 font-bold px-3 py-1 float-right mt-[-15px] print:border-black">$1</span>`);
+            rawText = rawText.replace(/\\examcode\{([^{}]+)\}/g, `<span class="border-[1.5px] border-slate-900 font-bold px-2 py-0.5 inline-block print:border-black">$1</span>`);
 
             // Khối trắc nghiệm ngang (Không bo tròn, mẫu 2025)
             rawText = rawText.replace(/\\begin\{choices\}([\s\S]*?)\\end\{choices\}/g, function(match, content) {
@@ -1698,7 +1706,7 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
                     while(newS !== s) { s = newS; newS = s.replace(colorRegex, '<span style="color: $1;">$2</span>'); }
                     
                     // Xử lý các lệnh cấu trúc đặc biệt mới thêm (Dòng kẻ, dấu chấm, ngắt trang, kẻ kín trang)
-                    s = s.replace(/\\dotfill/g, '<span class="inline-block w-48 mx-2 relative -top-1 clear-both" style="border-bottom: 1.5px dotted #64748b;"></span>');
+                    s = s.replace(/\\dotfill/g, '<span class="inline-block w-48 mx-2 relative -top-1" style="border-bottom: 1.5px dotted #64748b;"></span>');
                     
                     // Hàm render n dòng kẻ
                     s = s.replace(/\\answerlines\{(\d+)\}/g, (match, n) => {
