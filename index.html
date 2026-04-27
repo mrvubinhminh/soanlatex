@@ -777,6 +777,9 @@
                 return html;
             });
 
+            // --- TÍNH NĂNG MỚI: Tự động nhận diện list có dấu sao (*) ---
+            rawText = rawText.replace(/^[ \t]*\*(?!\*)[ \t]+(.*)$/gm, `<div style="margin-left: 20px; margin-top: 5px; margin-bottom: 5px;">&bull; $1</div>`);
+
             // Chuyển đổi các định dạng đặc biệt sang HTML mà Word có thể đọc (dùng bảng table)
             // 1. Căn giữa
             rawText = rawText.replace(/\\begin\{center\}([\s\S]*?)\\end\{center\}/g, `<div align="center">$1</div>`);
@@ -1196,12 +1199,26 @@ $$x^2 + y^2 - 4x + 6y - 12 = 0$$
   \\item \\textbf{Câu 10:} Có 2 tiếp tuyến thỏa mãn: $x - 4 = 0$ và $8x - 15y + 13 = 0$. | 1.0
 \\end{rubric}`;
             } else if (type === 'test_2025') {
-                templateCode = `\\textbf{TRƯỜNG THPT NGUYỄN HỮU CẢNH} \\hfill \\textbf{ÔN KIỂM TRA HKII - ĐỀ SỐ 1}\\\\
-\\textbf{TỔ TOÁN} \\hfill \\textbf{MÔN TOÁN - LỚP 12}\\\\
-\\textit{(Đề thi có 4 trang)} \\hfill \\textit{Thời gian làm bài: 90 phút}\\\\
-\\hrulefill
+                templateCode = `\\begin{twocolumns}
+\\column
+\\textbf{THPT NGUYỄN HỮU CẢNH}\\\\
+\\textbf{TỔ TOÁN}\\\\
+\\textit{(Đề thi có 4 trang)}
+\\column
+\\textbf{Ôn Kiểm Tra HKII - Đề Số 1}\\\\
+\\textbf{MÔN TOÁN - LỚP 12}\\\\
+\\textit{Thời gian làm bài 90 phút}\\\\
+\\textit{(Đề có 12 câu trắc nghiệm, 4 đúng sai, 6 điền đáp án)}
+\\end{twocolumns}
 
-\\textbf{Họ và tên thí sinh:} \\dotfill \\textbf{Số Báo Danh:} \\dotfill \\hfill \\examcode{Mã đề 135}
+\\vspace{0.2cm}
+
+\\textbf{Họ và tên thí sinh:} \\dotfill
+
+\\textbf{Số Báo Danh:} \\dotfill \\examcode{Mã đề thi 135}
+
+\\vspace{0.2cm}
+\\hrulefill
 
 \\partheading{PHẦN I. Trắc nghiệm nhiều lựa chọn. (12 câu)}
 
@@ -1562,6 +1579,9 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
                 html += `</div>`;
                 return html;
             });
+
+            // --- TÍNH NĂNG MỚI: Tự động nhận diện list có dấu sao (*) ---
+            rawText = rawText.replace(/^[ \t]*\*(?!\*)[ \t]+(.*)$/gm, `<div class="flex items-start gap-2 ml-4 my-1 w-full avoid-break clear-both"><span class="font-bold text-slate-800">&bull;</span><div class="flex-1">$1</div></div>`);
             
             // --- CÁC HÀM CẤU TRÚC ĐẶC BIỆT MỚI ---
 
@@ -1698,7 +1718,7 @@ b) Tìm tọa độ tâm I và bán kính R của đường tròn ngoại tiếp
                     while(newS !== s) { s = newS; newS = s.replace(colorRegex, '<span style="color: $1;">$2</span>'); }
                     
                     // Xử lý các lệnh cấu trúc đặc biệt mới thêm (Dòng kẻ, dấu chấm, ngắt trang, kẻ kín trang)
-                    s = s.replace(/\\dotfill/g, '<span class="inline-block w-48 mx-2 relative -top-1" style="border-bottom: 1.5px dotted #64748b;"></span>');
+                    s = s.replace(/\\dotfill/g, '<span class="inline-block w-48 mx-2 relative -top-1 clear-both" style="border-bottom: 1.5px dotted #64748b;"></span>');
                     
                     // Hàm render n dòng kẻ
                     s = s.replace(/\\answerlines\{(\d+)\}/g, (match, n) => {
