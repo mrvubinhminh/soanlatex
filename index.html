@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trình Soạn Thảo LaTeX  - Thầy Vũ Tiến Lực</title>
+    <title>Trình Soạn Thảo LaTeX Chuyên Nghiệp - Thầy Việt</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -174,22 +174,16 @@
                 <option value="test_rubric">Đề có đáp án & thang điểm (Hàng kẻ)</option>
             </select>
 
-            <!-- TIỆN ÍCH NGẮT TRANG VÀ ĐÁNH SỐ TRANG -->
+            <!-- TIỆN ÍCH NGẮT TRANG -->
             <button onclick="insertAtCursor('\\newpage\n')" class="bg-purple-500 hover:bg-purple-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-purple-400 text-white" title="Chèn dấu ngắt trang (sang trang mới)">
                 <i class="ph ph-file-dashed text-lg"></i> Ngắt trang
             </button>
-            <button onclick="insertAtCursor('\\vspace{0.2cm}\n\\hfill Trang .../...\n')" class="bg-teal-500 hover:bg-teal-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-teal-400 text-white" title="Chèn đánh số trang ở góc phải">
-                <i class="ph ph-hash text-lg"></i> Đánh số trang
-            </button>
 
             <!-- NÚT CHUẨN HÓA TEXT (AUTO FORMAT) -->
-            <button onclick="autoFormatText()" class="bg-violet-500 hover:bg-violet-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-violet-400 text-white" title="Tự động biến văn bản thường thành mã LaTeX chuẩn">
+            <button onclick="autoFormatText()" class="bg-violet-500 hover:bg-violet-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium shadow-md border border-violet-400 text-white" title="Làm đẹp đề mục và tô màu câu hỏi tự động">
                 <i class="ph ph-magic-wand"></i> Chuẩn hóa
             </button>
 
-            <button onclick="downloadTex()" class="bg-amber-500 hover:bg-amber-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="Lưu mã nguồn LaTeX (.tex)">
-                <i class="ph ph-download-simple"></i>
-            </button>
             <button onclick="printPDF()" class="bg-indigo-500 hover:bg-indigo-600 px-3 py-2 rounded transition flex items-center gap-2 text-sm font-medium" title="In ra PDF">
                 <i class="ph ph-printer"></i>
             </button>
@@ -306,25 +300,23 @@
             let text = editor.value;
 
             // 1. Tiêu đề BÀI (Center, Large, Bold)
-            text = text.replace(/^[ \t]*(?:\*\s*)?\*\*BÀI:\s*(.*?)\*\*$/gm, '\\begin{center}\n\\Large{\\textbf{BÀI: $1}}\n\\end{center}\n\\hrulefill\n');
+            text = text.replace(/^[ \t]*(?:\*\s*)?\*\*(?:BÀI|CHUYÊN ĐỀ|ĐỀ THI):\s*(.*?)\*\*$/gmi, '\\begin{center}\n\\Large{\\textbf{BÀI: $1}}\n\\end{center}\n\\hrulefill\n');
 
             // 2. Tiêu đề Phần (PHẦN 1, PHẦN 2...)
-            text = text.replace(/^[ \t]*(?:\*\s*)?\*\*PHẦN\s*(.*?)\*\*$/gm, '\\partheading{PHẦN $1}');
+            text = text.replace(/^[ \t]*(?:\*\s*)?\*\*PHẦN\s*(.*?)\*\*$/gmi, '\\partheading{PHẦN $1}');
 
             // 3. Câu X: Chọn Y (Phần lời giải) -> Chữ Đỏ, xuống dòng
-            text = text.replace(/^[ \t]*(?:\*\s*)?\*\*Câu\s+(\d+)[\.:]?\s*Chọn\s+([A-D])\.?\*\*/gm, '\\textbf{\\textcolor{red}{Câu $1: Chọn $2}}\\\\');
+            text = text.replace(/^[ \t]*(?:\*\s*)?\*\*Câu\s+(\d+)[\.:]?\s*Chọn\s+([A-D])\.?\*\*/gmi, '\\textbf{\\textcolor{red}{Câu $1: Chọn $2}}\\\\');
 
             // 4. Câu X: (Phần câu hỏi) -> Chữ Xanh
-            text = text.replace(/^[ \t]*(?:\*\s*)?\*\*Câu\s+(\d+)[\.:]?\*\*/gm, '\\textbf{\\textcolor{blue}{Câu $1:$}}');
+            text = text.replace(/^[ \t]*(?:\*\s*)?\*\*Câu\s+(\d+)[\.:]?\*\*/gmi, '\\textbf{\\textcolor{blue}{Câu $1:$}}');
 
             // 5. Dấu --- phân cách -> Đổi thành ngắt dòng và kẻ ngang
             text = text.replace(/^---$/gm, '\\vspace{0.2cm}\n\\hrulefill\n\\vspace{0.2cm}');
 
-            // (Phần tự động bắt A,B,C,D và a)b)c)d) gỡ bỏ khỏi chuẩn hóa cứng để dành đất cho hệ thống phân tích động thông minh lúc render)
-            
             editor.value = text;
             triggerUpdate();
-            showToast("Đã chuẩn hóa văn bản thành công!");
+            showToast("Đã chuẩn hóa các đề mục và màu sắc thành công!");
         }
 
 
@@ -652,7 +644,7 @@
                 // Không bọc $ nếu là các lệnh cấu trúc đặc biệt không cần $
                 if (isBlockMath) {
                     finalValue = '$$\n' + finalValue + '\n$$';
-                } else if (!myValue.match(/\\textbf|\\textit|\\underline|\\textcolor|\\hrulefill|\\\\|\\answerlines|\\answertwocols|\\fillpage|\\gradingbox|\\partheading|\\examcode|\\shortanswer|\\imageplaceholder|\\Large/)) {
+                } else if (!myValue.match(/\\textbf|\\textit|\\underline|\\textcolor|\\hrulefill|\\\\|\\answerlines|\\answertwocols|\\fillpage|\\gradingbox|\\partheading|\\examcode|\\shortanswer|\\imageplaceholder|\\Large|\\newpage/)) {
                     finalValue = '$' + finalValue + '$';
                 }
             }
